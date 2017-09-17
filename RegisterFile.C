@@ -13,6 +13,10 @@ RegisterFile * RegisterFile::regInstance = NULL;
  */
 RegisterFile::RegisterFile()
 {
+  for(int i = 0; i < 15; i++)
+  {
+    reg[i] = 0;
+  }
 }
 
 /**
@@ -25,16 +29,22 @@ RegisterFile::RegisterFile()
  */
 RegisterFile * RegisterFile::getInstance()
 {
-   return NULL;
+   if (regInstance == NULL)
+   {
+     //RegisterFile = new RegisterFile();
+     //regInstance -> RegisterFile;
+     regInstance = new RegisterFile();
+   }
+   return regInstance;
 }
 
 /**
  * readRegister
  * returns a register value from the reg array.
- * if regNumber is a valid register number then 
+ * if regNumber is a valid register number then
  * sets error to false and returns
  * the register value; otherwise sets error to
- * true and returns 0 
+ * true and returns 0
  *
  * @param register number
  * @returns reg[regNumber] if regNumber is valid, otherwise 0
@@ -42,6 +52,12 @@ RegisterFile * RegisterFile::getInstance()
 */
 uint64_t RegisterFile::readRegister(int32_t regNumber, bool & error)
 {
+   if(regNumber >= 0 && regNumber < 15)
+   {
+     error = false;
+     return reg[regNumber];
+   }
+   error = true;
    return 0;
 }
 
@@ -54,10 +70,18 @@ uint64_t RegisterFile::readRegister(int32_t regNumber, bool & error)
  * @param number of register to be modified (index into reg array)
  * @returns sets error to false if regNumber is valid and true otherwise
  */
-void RegisterFile::writeRegister(uint64_t value, int32_t regNumber, 
+void RegisterFile::writeRegister(uint64_t value, int32_t regNumber,
                                  bool & error)
 {
-   return;
+  if(regNumber >= 0 && regNumber < 15)
+  {
+    error = false;
+    reg[regNumber] = value;
+  }
+  else
+  {
+    error = true;
+  }
 }
 
 /**
@@ -67,16 +91,16 @@ void RegisterFile::writeRegister(uint64_t value, int32_t regNumber,
 void RegisterFile::dump()
 {
    std::string rnames[15] = {"%rax: ", "%rcx: ", "%rdx: ",  "%rbx: ",
-                             "%rsp: ", "%rbp: ", "%rsi: ",  "%rdi: ", 
+                             "%rsp: ", "%rbp: ", "%rsi: ",  "%rdi: ",
                              "% r8: ", "% r9: ", "%r10: ",  "%r11: ",
-                             "%r12: ", "%r13: ", "%r14: "};  
+                             "%r12: ", "%r13: ", "%r14: "};
    for (int32_t i = 0; i < REGSIZE; i+=4)
    {
       for (int32_t j = 0; j < 3; j++)
-         std::cout << rnames[i + j] << std::hex << std::setw(16) 
+         std::cout << rnames[i + j] << std::hex << std::setw(16)
                    << std::setfill('0') << reg[i + j] << ' ';
-      if (i + 3 < REGSIZE) 
-         std::cout << rnames[i + 3] << std::hex << std::setw(16) 
+      if (i + 3 < REGSIZE)
+         std::cout << rnames[i + 3] << std::hex << std::setw(16)
                    << std::setfill('0') << reg[i + 3] << std::endl;
       else
          std::cout << std::endl;
