@@ -1,105 +1,113 @@
 #include <iostream>
-#include <assert.h>
+#include <iomanip>
 #include "RegisterFile.h"
-#include "RegisterFileTester.h"
-
-/** 
- * RegisterFileTester constructor
- * Initializes the RegisterFile instance 
- *
+#include "Tools.h"
+/**
+*@author Francis Boadu
+*@author Matthew Glynn
 */
-RegisterFileTester::RegisterFileTester()
-{
-   this->rf = RegisterFile::getInstance();
-}
 
-/** 
- * doRegisterFileTests
- * Calls each individual method to perform tests of the RegisterFile 
- * methods
- *
-*/
-void RegisterFileTester::doRegisterFileTests()
-{
-   assert(this->rf != NULL);
 
-   doClearRegisterTests();
-   doReadWriteRegisterTests();
-   doReadWriteErrorTests();
+//regInstance will be initialized to the single RegisterFile
+//object that is created
+RegisterFile * RegisterFile::regInstance = NULL;
 
-   std::cout << "All RegisterFile tests passed.\n"; 
-}
-
-/*
- * doClearRegisterTests
- * Checks to make sure the registers have been initialized to 0
+/**
+ * RegisterFile constructor
+ * initialize the contents of the reg array to 0
  */
-void RegisterFileTester::doClearRegisterTests()
+RegisterFile::RegisterFile()
 {
-   int32_t regNumber;
-   bool error;
-   uint64_t value;
-   for (regNumber = 0; regNumber < REGSIZE; regNumber++)
-   {
-       value = this->rf->readRegister(regNumber, error);
-       //value should be 0 if registers initialized to 0
-       assert(value == 0);
-       //regNumber is valid thus error should be false
-       assert(error == false);
-   }
+  for(int i = 0; i < 15; i++)
+  {
+    reg[i] = 0;
+  }
 }
 
-/** 
- * doReadWriteRegisterTests
- * Perform tests on RegisterFile::writeRegister and 
- * RegisterFile::readRegister
+/**
+ * getInstance
+ * if regInstance is NULL then creates a Register object
+ * and sets regInstance to point it; returns regInstance
  *
-*/
-void RegisterFileTester::doReadWriteRegisterTests()
-{
-   int32_t regNumber;
-   bool error;
-   uint64_t svalue = 0x1122334455667788;
-   uint64_t lvalue;
-   for (regNumber = 0; regNumber < REGSIZE; regNumber++)
-   {
-       this->rf->writeRegister(svalue, regNumber, error);
-       //regNumber is valid thus error should be false
-       assert(error == false);
-       lvalue = this->rf->readRegister(regNumber, error);
-       //lvalue should be the value just stored
-       assert(lvalue == svalue);
-       //regNumber is valid thus error should be false
-       assert(error == false);
-   }
-}
-
-/** 
- * doReadWriteErrorTests
- * makes sure the RegisterFile::readRegister and 
- * RegisterFile::writeRegister handle out of bounds
- * register numbers by setting error to true
+ * @return regInstance, the pointer to the single RegisterFile
+ *         instance
  */
-void RegisterFileTester::doReadWriteErrorTests()
+RegisterFile * RegisterFile::getInstance()
 {
-   bool error;
-   uint64_t svalue = 0x1122334455667788;
-   uint64_t lvalue;
-   int32_t regNumber;
-   //test using a range of bad register numbers
-   for (regNumber = -31; regNumber < 32; regNumber++)
+   if (regInstance == NULL)
    {
-      if (regNumber < 0 || regNumber >= REGSIZE)
-      {
-         this->rf->writeRegister(svalue, regNumber, error);
-         //bad regNumber so error should be true
-         assert(error == true);
-         lvalue = this->rf->readRegister(regNumber, error);
-         //bad regNumber so readRegister returns 0
-         assert(lvalue == 0);
-         //bad regNumber so error should be true
-         assert(error == true);
-      }
+     //RegisterFile = new RegisterFile();
+     //regInstance -> RegisterFile;
+     regInstance = new RegisterFile();
    }
+   return regInstance;
 }
 
+/**
+ * readRegister
+ * returns a register value from the reg array.
+ * if regNumber is a valid register number then
+ * sets error to false and returns
+ * the register value; otherwise sets error to
+ * true and returns 0
+ *
+ * @param register number
+ * @returns reg[regNumber] if regNumber is valid, otherwise 0
+ * @returns sets error to false if regNumber is valid, otherwise true
+*/
+uint64_t RegisterFile::readRegister(int32_t regNumber, bool & error)
+{
+   if(regNumber >= 0 && regNumber < 15)
+   {
+     error = false;
+     return reg[regNumber];
+   }
+   error = true;
+   return 0;
+}
+
+/**
+ * writeRegister
+ * sets a register to a specified value if the regNumber is
+ * within range and sets error to false; otherwise, sets error to true
+ *
+ * @param value to be stored in reg[regNumber]
+ * @param number of register to be modified (index into reg array)
+ * @returns sets error to false if regNumber is valid and true otherwise
+ */
+void RegisterFile::writeRegister(uint64_t value, int32_t regNumber,
+                                 bool & error)
+{
+  if(regNumber >= 0 && regNumber < 15)
+  {
+    error = false;
+    reg[regNumber] = value;
+  }
+  else
+  {
+    error = true;
+  }
+}
+
+/**
+ * dump
+ * output the contents of the reg array
+ */
+void RegisterFile::dump()
+{
+   std::string rnames[15] = {"%rax: ", "%rcx: ", "%rdx: ",  "%rbx: ",
+                             "%rsp: ", "%rbp: ", "%rsi: ",  "%rdi: ",
+                             "% r8: ", "% r9: ", "%r10: ",  "%r11: ",
+                             "%r12: ", "%r13: ", "%r14: "};
+   for (int32_t i = 0; i < REGSIZE; i+=4)
+   {
+      for (int32_t j = 0; j < 3; j++)
+         std::cout << rnames[i + j] << std::hex << std::setw(16)
+                   << std::setfill('0') << reg[i + j] << ' ';
+      if (i + 3 < REGSIZE)
+         std::cout << rnames[i + 3] << std::hex << std::setw(16)
+                   << std::setfill('0') << reg[i + 3] << std::endl;
+      else
+         std::cout << std::endl;
+   }
+}
