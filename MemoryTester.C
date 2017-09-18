@@ -1,153 +1,192 @@
 #include <iostream>
-#include <assert.h>
+#include <iomanip>
 #include "Memory.h"
-#include "MemoryTester.h"
+#include "Tools.h"
 
-/** 
- * MemoryTester constructor
- * Initializes the Memory instance 
- *
+/**
+*@author Francis Boadu
+*@author Matthew Glynn
 */
-MemoryTester::MemoryTester()
-{
-   this->mem = Memory::getInstance();
-}
 
-/** 
- * doMemoryTests
- * Calls each individual method to perform tests of the Memory methods
- *
-*/
-void MemoryTester::doMemoryTests()
+
+//memInstance will be initialized to the single instance
+//of the Memory class
+Memory * Memory::memInstance = NULL;
+
+/**
+ * Memory constructor
+ * initializes the mem array to 0
+ */
+Memory::Memory()
 {
-   assert(this->mem != NULL);
-   doClearMemoryTests();
-   doPutGetByteTests();
-   doPutGetLongTests();
-   doByteErrorTests();
-   doLongErrorTests();
-   std::cout << "All Memory tests passed.\n"; 
+  for(int i = 0; i < 10; i++)
+  {
+    mem[i] = 0;
+
+  }
+
 }
 
 /**
- * doClearMemoryTests
- * Makes sure that the memory has been initialized to 0
-*/
-void MemoryTester::doClearMemoryTests()
+ * getInstance
+ * if memInstance is NULL then creates a Memory object
+ * and sets memInstance to point to it; returns memInstance
+ *
+ * @return memInstance
+ */
+Memory * Memory::getInstance()
 {
-   int32_t addr;
-   bool error;
-   uint8_t value;
-   for (addr = 0; addr < MEMSIZE; addr++)
+   if (memInstance == NULL)
    {
-      value = this->mem->getByte(addr, error);
-      //byte retrieved should be 0
-      assert(value == 0);
-      //address is valid so error should be false
-      assert(error == false);
+     memInstance = new Memory();
    }
+   return memInstance;
 }
 
-/** 
- * doPutGetByteTests
- * Perform tests on Memory::putByte and Memory::getByte
+/**
+ * getLong
+ * returns the 64-bit word at the indicated address; sets imem_error
+ * to false if the access is aligned and the address is within range;
+ * otherwise sets imem_error to true
  *
-*/
-void MemoryTester::doPutGetByteTests()
+ * @param address of 64-bit word; access must be aligned (address % 8 == 0)
+ * @return imem_error is set to true or false
+ * @return returns 64-bit word at the specified address or 0 if the
+ *         access is not aligned or out of range
+ */
+uint64_t Memory::getLong(int32_t address, bool & imem_error)
 {
-   int32_t addr;
-   bool error;
-   uint8_t svalue = 0x88;
-   uint8_t lvalue;
-   for (addr = 0; addr < MEMSIZE; addr++)
-   {
-      this->mem->putByte(svalue, addr, error);
-      //address is valid so error should be false
-      assert(error == false);
-      lvalue = this->mem->getByte(addr, error);
-      //byte retrieved should be the same as that stored
-      assert(lvalue == svalue);
-      //address is valid so error should be false
-      assert(error == false);
-   }
+  if(address >= MEMSIZE || address < 0 || (address % 8) != 0)
+  {
+    imem_error = true;
+    return 0;
+  }
+  else
+  {
+    imem_error = false;
+    return Tools::buildLong(mem);
+  }
 }
 
-/** 
- * doPutGetLongTests
- * Perform tests on Memory::putLong and Memory::getLong
+/**
+ * getByte
+ * returns the byte (8-bits) at the indicated address if address
+ * is within range and sets imem_error; otherwise sets imem_error to
+ * true and returns 0
  *
-*/
-void MemoryTester::doPutGetLongTests()
+ * @param address of byte
+ * @return imem_error is set to true or false
+ * @return byte at specified address or 0 if the address is out of range
+ */
+uint8_t Memory::getByte(int32_t address, bool & imem_error)
 {
-   int32_t addr;
-   bool error;
-   uint64_t svalue = 0x1122334455667788;
-   uint64_t lvalue;
-   for (addr = 0; addr < MEMSIZE; addr+=8)
-   {
-      this->mem->putLong(svalue, addr, error);
-      //address is valid so error should be false
-      assert(error == false);
-      lvalue = this->mem->getLong(addr, error);
-      //long retrieved should be the same as that stored
-      assert(lvalue == svalue);
-      //address is valid so error should be false
-      assert(error == false);
-   }
+if(address >= MEMSIZE || address< 0)
+{
+  imem_error = true;
+  return 0;
+}
+imem_error = false;
+return mem[address];
+
+
 }
 
-/** 
- * doByteErrorTests
- * Perform error tests on Memory::getByte and Memory::putByte
+/**
+ * putLong
+ * sets the 64-bit word in memory at the indicated address to the
+ * value that is provided if the address is aligned and within range
+ * and sets imem_error to false; otherwise sets
+ * imem_error to true
  *
-*/
-void MemoryTester::doByteErrorTests()
+ * @param 64-bit value to be stored in memory (mem array)
+ * @param address of 64-bit word; access must be aligned (address % 8 == 0)
+ * @return imem_error is set to true or false
+ */
+void Memory::putLong(uint64_t value, int32_t address, bool & imem_error)
 {
-   int32_t addr;
-   bool error;
-   uint8_t svalue = 0x88;
-   uint8_t lvalue;
-   //test on a random range of addresses
-   for (addr = -0x2000; addr < 0x2000; addr++)
+  if (address >= MEMSIZE || address < 0 || address % 8 != 0)
+  {
+    imem_error = true;
+    return;
+  }
+  else
+  {
+    for (int i = 0; i < 8; i++)
+    {
+        imem_error = false;
+       mem[address + i] = Tools::getByte(value,i);
+
+    }
+
+  }
+
+}
+
+/**
+ * putByte
+ * sets the byte (8-bits) in memory at the indicated address to the value
+ * provided if the address is within range and sets imem_error to false;
+ * otherwise sets imem_error to true
+ *
+ * @param 8-bit value to be stored in memory (mem array)
+ * @param address of byte
+ * @return imem_error is set to true or false
+ */
+
+void Memory::putByte(uint8_t value, int32_t address, bool & imem_error)
+{
+   if (address >= MEMSIZE || address < 0)
    {
-      if (addr < 0 || addr >= MEMSIZE)
+     imem_error = true;
+   }
+   else
+   {
+     imem_error = false;
+     mem[address] = value;
+   }
+
+}
+
+/**
+ * dump
+ * Output the contents of memory (mem array), four 64-bit words per line.
+ * Rather than output memory that contains a lot of 0s, it outputs
+ * a * after a line to indicate that the values in memory up to the next
+ * line displayed are identical.
+ */
+void Memory::dump()
+{
+   uint64_t prevLine[4] = {0, 0, 0, 0};
+   uint64_t currLine[4] = {0, 0, 0, 0};
+   int32_t i;
+   bool star = false;
+   bool mem_error;
+
+   //32 bytes per line (four 8-byte words)
+   for (i = 0; i < MEMSIZE; i+=32)
+   {
+      //get the values for the current line
+      for (int32_t j = 0; j < 4; j++) currLine[j] = getLong(i+j*8, mem_error);
+
+      //if they are the same as the values in the previous line then
+      //don't display them, but always display the first line
+      if (i == 0 || currLine[0] != prevLine[0] || currLine[1] != prevLine[1]
+          || currLine[2] != prevLine[2] || currLine[3] != prevLine[3])
       {
-         this->mem->putByte(svalue, addr, error);
-         //address is invalid so error should be true
-         assert(error == true);
-         lvalue = this->mem->getByte(addr, error);
-         //address is invalid so getByte should return 0
-         assert(lvalue == 0);
-         //address is invalid so error should be true
-         assert(error == true);
-      }
-   }
-}
-
-/** 
- * doLongErrorTests
- * Perform error tests on Memory::getLong and Memory::putLong
- *
-*/
-void MemoryTester::doLongErrorTests()
-{
-   int32_t addr;
-   bool error;
-   uint64_t svalue = 0x1122334455667788;
-   uint64_t lvalue;
-   for (addr = -0x2000; addr < 0x2000; addr++)
-   {
-      if (addr < 0 || addr >= MEMSIZE || addr % 8 != 0)
+         std::cout << std::endl << std::setw(3) << std::setfill('0')
+                   << std::hex << i << ": ";
+         for (int32_t j = 0; j < 4; j++)
+             std::cout << std::setw(16) << std::setfill('0')
+                       << std::hex << currLine[j] << " ";
+         star = false;
+      } else
       {
-         //address is invalid so error should be true
-         this->mem->putLong(svalue, addr, error);
-         assert(error == true);
-         lvalue = this->mem->getLong(addr, error);
-         //address is invalid so 0 returned by getLong
-         assert(lvalue == 0);
-         //address is invalid so error should be true
-         assert(error == true);
+         //if this line is exactly like the previous line then
+         //just print a * if one hasn't been printed already
+         if (star == false) std::cout << "*";
+         star = true;
       }
+      for (int32_t j = 0; j < 4; j++) prevLine[j] = currLine[j];
    }
+   std::cout << std::endl;
 }
-
