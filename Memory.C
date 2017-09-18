@@ -3,16 +3,28 @@
 #include "Memory.h"
 #include "Tools.h"
 
+/**
+*@author Francis Boadu
+*@author Matthew Glynn
+*/
+
+
 //memInstance will be initialized to the single instance
 //of the Memory class
 Memory * Memory::memInstance = NULL;
 
-/** 
+/**
  * Memory constructor
  * initializes the mem array to 0
  */
 Memory::Memory()
 {
+  for(int i = 0; i < 10; i++)
+  {
+    mem[i] = 0;
+
+  }
+
 }
 
 /**
@@ -24,7 +36,11 @@ Memory::Memory()
  */
 Memory * Memory::getInstance()
 {
-   return NULL;
+   if (memInstance == NULL)
+   {
+     memInstance = new Memory();
+   }
+   return memInstance;
 }
 
 /**
@@ -40,7 +56,16 @@ Memory * Memory::getInstance()
  */
 uint64_t Memory::getLong(int32_t address, bool & imem_error)
 {
-   return 0;
+  if(address >= MEMSIZE || address < 0 || (address % 8) != 0)
+  {
+    imem_error = true;
+    return 0;
+  }
+  else
+  {
+    imem_error = false;
+    return Tools::buildLong(mem);
+  }
 }
 
 /**
@@ -55,14 +80,22 @@ uint64_t Memory::getLong(int32_t address, bool & imem_error)
  */
 uint8_t Memory::getByte(int32_t address, bool & imem_error)
 {
-   return 0;
+if(address >= MEMSIZE || address< 0)
+{
+  imem_error = true;
+  return 0;
+}
+imem_error = false;
+return mem[address];
+
+
 }
 
 /**
  * putLong
  * sets the 64-bit word in memory at the indicated address to the
  * value that is provided if the address is aligned and within range
- * and sets imem_error to false; otherwise sets 
+ * and sets imem_error to false; otherwise sets
  * imem_error to true
  *
  * @param 64-bit value to be stored in memory (mem array)
@@ -71,13 +104,28 @@ uint8_t Memory::getByte(int32_t address, bool & imem_error)
  */
 void Memory::putLong(uint64_t value, int32_t address, bool & imem_error)
 {
-   return;
+  if (address >= MEMSIZE || address < 0 || address % 8 != 0)
+  {
+    imem_error = true;
+    return;
+  }
+  else
+  {
+    for (int i = 0; i < 8; i++)
+    {
+        imem_error = false;
+       mem[address + i] = Tools::getByte(value,i);
+
+    }
+
+  }
+
 }
 
 /**
  * putByte
  * sets the byte (8-bits) in memory at the indicated address to the value
- * provided if the address is within range and sets imem_error to false; 
+ * provided if the address is within range and sets imem_error to false;
  * otherwise sets imem_error to true
  *
  * @param 8-bit value to be stored in memory (mem array)
@@ -87,7 +135,16 @@ void Memory::putLong(uint64_t value, int32_t address, bool & imem_error)
 
 void Memory::putByte(uint8_t value, int32_t address, bool & imem_error)
 {
-   return;
+   if (address >= MEMSIZE || address < 0)
+   {
+     imem_error = true;
+   }
+   else
+   {
+     imem_error = false;
+     mem[address] = value;
+   }
+
 }
 
 /**
@@ -113,13 +170,13 @@ void Memory::dump()
 
       //if they are the same as the values in the previous line then
       //don't display them, but always display the first line
-      if (i == 0 || currLine[0] != prevLine[0] || currLine[1] != prevLine[1] 
+      if (i == 0 || currLine[0] != prevLine[0] || currLine[1] != prevLine[1]
           || currLine[2] != prevLine[2] || currLine[3] != prevLine[3])
       {
-         std::cout << std::endl << std::setw(3) << std::setfill('0') 
-                   << std::hex << i << ": "; 
-         for (int32_t j = 0; j < 4; j++) 
-             std::cout << std::setw(16) << std::setfill('0') 
+         std::cout << std::endl << std::setw(3) << std::setfill('0')
+                   << std::hex << i << ": ";
+         for (int32_t j = 0; j < 4; j++)
+             std::cout << std::setw(16) << std::setfill('0')
                        << std::hex << currLine[j] << " ";
          star = false;
       } else

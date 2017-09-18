@@ -2,6 +2,11 @@
 #include <iomanip>
 #include "RegisterFile.h"
 #include "Tools.h"
+/**
+*@author Francis Boadu
+*@author Matthew Glynn
+*/
+
 
 //regInstance will be initialized to the single RegisterFile
 //object that is created

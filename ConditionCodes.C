@@ -2,6 +2,11 @@
 #include <iomanip>
 #include "ConditionCodes.h"
 #include "Tools.h"
+/**
+*@author Francis Boadu
+*@author Matthew Glynn
+*/
+
 
 //cc_instance will be initialized to reference the single
 //instance of ConditionCodes
