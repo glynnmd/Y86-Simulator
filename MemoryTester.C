@@ -3,9 +3,9 @@
 #include "Memory.h"
 #include "MemoryTester.h"
 
-/** 
+/**
  * MemoryTester constructor
- * Initializes the Memory instance 
+ * Initializes the Memory instance
  *
 */
 MemoryTester::MemoryTester()
@@ -13,7 +13,7 @@ MemoryTester::MemoryTester()
    this->mem = Memory::getInstance();
 }
 
-/** 
+/**
  * doMemoryTests
  * Calls each individual method to perform tests of the Memory methods
  *
@@ -26,7 +26,7 @@ void MemoryTester::doMemoryTests()
    doPutGetLongTests();
    doByteErrorTests();
    doLongErrorTests();
-   std::cout << "All Memory tests passed.\n"; 
+   std::cout << "All Memory tests passed.\n";
 }
 
 /**
@@ -48,7 +48,7 @@ void MemoryTester::doClearMemoryTests()
    }
 }
 
-/** 
+/**
  * doPutGetByteTests
  * Perform tests on Memory::putByte and Memory::getByte
  *
@@ -72,7 +72,7 @@ void MemoryTester::doPutGetByteTests()
    }
 }
 
-/** 
+/**
  * doPutGetLongTests
  * Perform tests on Memory::putLong and Memory::getLong
  *
@@ -96,7 +96,7 @@ void MemoryTester::doPutGetLongTests()
    }
 }
 
-/** 
+/**
  * doByteErrorTests
  * Perform error tests on Memory::getByte and Memory::putByte
  *
@@ -124,7 +124,7 @@ void MemoryTester::doByteErrorTests()
    }
 }
 
-/** 
+/**
  * doLongErrorTests
  * Perform error tests on Memory::getLong and Memory::putLong
  *
@@ -150,4 +150,3 @@ void MemoryTester::doLongErrorTests()
       }
    }
 }
-
