@@ -2,6 +2,11 @@
 #include <iomanip>
 #include "ConditionCodes.h"
 #include "Tools.h"
+/**
+*@author Francis Boadu
+*@author Matthew Glynn
+*/
+
 
 //cc_instance will be initialized to reference the single
 //instance of ConditionCodes
@@ -49,7 +54,7 @@ bool ConditionCodes::getConditionCode(int32_t ccNum, bool & error)
    if(ccNum == OF || ccNum == SF || ccNum == ZF)
    {
       error = false;
-     return Tools::getBits(codes, ccNum, ccNum);;
+     return Tools::getBits(codes,ccNum,ccNum);
    }
    else
    {
@@ -70,27 +75,29 @@ bool ConditionCodes::getConditionCode(int32_t ccNum, bool & error)
  * @return error is set to true if ccNum is out of range and
  *         false otherwise
  */
-void ConditionCodes::setConditionCode(bool value, int32_t ccNum,
-                                      bool & error)
-{
-  if(ccNum == OF || ccNum == SF || ccNum == ZF)
-  {
-     if(value == true)
-     {
-         codes = Tools::setBits(codes, ccNum, ccNum);  
-     }
-     else if(value == false)
-     {
+ void ConditionCodes::setConditionCode(bool value, int32_t ccNum,
+                                       bool & error)
+ {
+   if(ccNum == OF || ccNum == SF || ccNum == ZF)
+   {
+      if(value == true)
+      {
+          codes = Tools::setBits(codes, ccNum, ccNum);
+      }
+      else
+      {
         codes = Tools::clearBits(codes, ccNum, ccNum);
-        error = false; 
-     }
-  }
-  else
-  {
+        error = false;
+      }
+   }
+   else
+   {
         error = true;
-  }
+   }
 
-}
+ }
+
+
 
 /*
  * dump
