@@ -77,12 +77,11 @@ void ConditionCodes::setConditionCode(bool value, int32_t ccNum,
   {
      if(value == true)
      {
-         Tools::setBits(codes, ccNum, ccNum);
-         error = false;  
+         codes = Tools::setBits(codes, ccNum, ccNum);  
      }
      else if(value == false)
      {
-        Tools::clearBits(codes, ccNum, ccNum);
+        codes = Tools::clearBits(codes, ccNum, ccNum);
         error = false; 
      }
   }
