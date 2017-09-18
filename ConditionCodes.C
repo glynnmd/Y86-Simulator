@@ -49,7 +49,7 @@ bool ConditionCodes::getConditionCode(int32_t ccNum, bool & error)
    if(ccNum == OF || ccNum == SF || ccNum == ZF)
    {
       error = false;
-     return ccNum;
+     return Tools::getBits(codes,ccNum,ccNum);
    }
    else
    {
@@ -70,15 +70,29 @@ bool ConditionCodes::getConditionCode(int32_t ccNum, bool & error)
  * @return error is set to true if ccNum is out of range and
  *         false otherwise
  */
-void ConditionCodes::setConditionCode(bool value, int32_t ccNum,
-                                      bool & error)
-{
-  if(ccNum == OF || ccNum == SF || ccNum == ZF)
-  {
-    return;
-  }
+ void ConditionCodes::setConditionCode(bool value, int32_t ccNum,
+                                       bool & error)
+ {
+   if(ccNum == OF || ccNum == SF || ccNum == ZF)
+   {
+      if(value == true)
+      {
+          codes = Tools::setBits(codes, ccNum, ccNum);
+      }
+      else
+      {
+        codes = Tools::clearBits(codes, ccNum, ccNum);
+        error = false;
+      }
+   }
+   else
+   {
+        error = true;
+   }
 
-}
+ }
+
+
 
 /*
  * dump

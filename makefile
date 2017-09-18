@@ -24,7 +24,7 @@ RegisterFile.o: RegisterFile.h RegisterFileTester.h
 
 RegisterFileTester.o: RegisterFile.h RegisterFileTester.h
 
-ConditionCodes.o: ConditionCodes.h
+ConditionCodes.o: ConditionCodes.h Tools.h
 
 ConditionCodesTester.o: ConditionCodes.h ConditionCodesTester.h
 
