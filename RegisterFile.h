@@ -26,7 +26,7 @@ class RegisterFile
       static RegisterFile * regInstance;
       RegisterFile();
       uint64_t reg[REGSIZE];
-   public:
+      public: 
       static RegisterFile * getInstance();      
       uint64_t readRegister(int32_t regNumber, bool & error);
       void writeRegister(uint64_t value, int32_t regNumber, 

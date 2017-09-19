@@ -4,34 +4,32 @@ ifeq ($(std), c++11)
 else
     CFLAGS = -g -c -Wall -std=c++0x
 endif
-OBJ = lab4.o MemoryTester.o Memory.o Tools.o RegisterFile.o \
-RegisterFileTester.o ConditionCodes.o ConditionCodesTester.o
+OBJ = lab5.o Memory.o Tools.o RegisterFile.o \
+ConditionCodes.o Loader.o
 .C.o:
 	$(CC) $(CFLAGS) $< -o $@
 
-lab4: $(OBJ)
-	$(CC) $(OBJ) -o lab4
+lab5: $(OBJ)
+	$(CC) $(OBJ) -o lab5
 
-lab4.o: Memory.h RegisterFile.h MemoryTester.h RegisterFileTester.h ConditionCodes.h ConditionCodesTester.h
-
-MemoryTester.o: Memory.h MemoryTester.h
-
-Memory.o: Memory.h Tools.h
+lab5.o: Memory.h RegisterFile.h ConditionCodes.h Loader.h
 
 Tools.o: Tools.h
 
-RegisterFile.o: RegisterFile.h RegisterFileTester.h
+RegisterFile.o: RegisterFile.h
 
-RegisterFileTester.o: RegisterFile.h RegisterFileTester.h
+RegisterFileTester.o: RegisterFile.h
 
 ConditionCodes.o: ConditionCodes.h Tools.h
 
-ConditionCodesTester.o: ConditionCodes.h ConditionCodesTester.h
+ConditionCodesTester.o: ConditionCodes.h
+
+Loader.o: Loader.h Memory.h
 
 clean:
-	rm $(OBJ) lab4
+	rm $(OBJ) lab5
 
 run:
 	make clean
-	make lab4
+	make lab5
 	./run.sh
