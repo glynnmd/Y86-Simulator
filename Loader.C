@@ -41,16 +41,11 @@ Loader::Loader(int argc, char * argv[])
    bool checker = check(argc, argv);
    if(checker == true)
    {
-     int c;
-     FILE *file;
-     file = fopen(argv[1], "r");
-     if (file)
+     std::ifstream infile(argv[1]);
+     std::string line;
+     while (std::getline(infile, line))
      {
-       while ((c = getc(file)) != EOF)
-       {
-       //putchar(c);
-       }
-       fclose(file);
+       std::cout << line << "\n";
      }
    }
 
