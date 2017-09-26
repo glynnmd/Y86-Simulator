@@ -7,6 +7,6 @@ class Loader
    public:
       Loader(int argc, char * argv[]);
       bool isLoaded();
-      bool check(char * argv[]);
-      void adder(int argc, char * argv[]);
+      bool check(int argc, char * argv[]);
+      void loadline(string line, uint32_t address);
 };

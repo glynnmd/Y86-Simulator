@@ -13,10 +13,10 @@ using namespace std;
 #include "Memory.h"
 
 //first column in file is assumed to be 0
-#define ADDRBEGIN 2   //starting column of 3 digit hex address 
+#define ADDRBEGIN 2   //starting column of 3 digit hex address
 #define ADDREND 4     //ending column of 3 digit hext address
 #define DATABEGIN 7   //starting column of data bytes
-#define COMMENT 28    //location of the '|' character 
+#define COMMENT 28    //location of the '|' character
 
 /**
  * Loader constructor
@@ -36,56 +36,74 @@ Loader::Loader(int argc, char * argv[])
 
    //start by writing a method that opens the file (checks whether it ends with a .yo and
    //whether the file successfully opens; if not, return without loading)
-   
+
    //next write a simple loop that reads the file line by line and prints it out
-   checker = check(argv); 
-   if (checker == 1)
+   bool checker = check(argc, argv);
+   if(checker == true)
    {
-        std::ifstream infile(argv[1]);
+     int c;
+     FILE *file;
+     file = fopen(argv[1], "r");
+     if (file)
+     {
+       while ((c = getc(file)) != EOF)
+       {
+       //putchar(c);
+       }
+       fclose(file);
+     }
    }
-   while (std::getline(infile, line))
-   {
-        std::cout << line << ".\n";
-   }
+
    //next, add a method that will write the data in the line to memory (call that from within
    //your loop)
-   adder(argc, argv);     
+
    //Finally, add code to check for errors in the input line.
    //When your code finds an error, you need to print an error message and return.
    //Since your output has to be identical to your instructor's, use this cout to print the
    //error message.  Change the variable names if you use different ones.
    //  cout << "Error on line " << dec << lineNumber
    //       << ": " << line << endl;
-     
+
    //if the end of the function is reached, then the input file was error free and
    //all of the lines were loaded into memory. Uncomment line below when ready:
    //
    //loaded = true;   // file was error free; program loaded into memory
-  
- 
+
+
 }
 
-bool Loader::check(char * argv[])
+bool Loader::check(int argc, char * argv[])
 {
-    std::string fn = argv[1]; 
-    if(fn.substr(fn.find_last_of(".") + 1) == "yo")
+    if (argc == 2)
     {
-       std::ifstream infile(argv[1]);
-       if (!infile) {std::cerr << "Error!\n"; return 0;}
-       else {return 1;}
+      std::string fn = argv[1];
+      if(fn.substr(fn.find_last_of(".") + 1) == "yo")
+      {
+          std::ifstream infile(argv[1]);
+          if (!infile)
+          {
+              std::cerr << "Error!\n";
+              return 0;
+            }
+            else
+            {
+              return 1;
+            }
+          }
+          else
+          {
+            return 0;
+          }
+    }
+    else
+    {
+        return 0;
     }
 }
 
-void Loader::adder(int argc, char * argv[])
+void Loader::loadline(string line, uint32_t address)
 {
-    std::ifstream infile(argv[1]);
-    std::string line;
-    while (std::getline(infile, line))
-    {
-        Memory::putByte(line, argc, false);
-        argc++; 
-    }
-
+  //Memory::putByte(line,address,false);
 }
 
 /**
