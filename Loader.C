@@ -38,8 +38,7 @@ Loader::Loader(int argc, char * argv[])
    //whether the file successfully opens; if not, return without loading)
 
    //next write a simple loop that reads the file line by line and prints it out
-   bool checker = check(argc, argv);
-   if(checker == true)
+   if(check(argc, argv))
    {
      std::ifstream infile(argv[1]);
      std::string line;
@@ -78,7 +77,7 @@ bool Loader::check(int argc, char * argv[])
           std::ifstream infile(argv[1]);
           if (!infile)
           {
-              std::cerr << "Error!\n";
+              std::cerr << "Error!.\n";
               return 0;
             }
             else
@@ -99,21 +98,27 @@ bool Loader::check(int argc, char * argv[])
 
 void Loader::loadline(string line)
 {
+  //checks to see if there is an address.
   if(line[0] == '0')
-  
   {
+    //converts address into int, make sure convert is right. 
     int32_t addr = convert(line, ADDRBEGIN, ADDREND);
+    //if there isn't a space there, then its an instruction.
     if(line[DATABEGIN] != ' ')
     {
+      //num is where the data begins
+      //check is to check if the location isnt a space and will change in the loop
+      //yee is the boolean needed for putByte
       int num = DATABEGIN;
       char check = line[num];
       bool yee = false;
+      //attempts to run convert two char at a time into address
+      //and increments address
       while(check != ' ' && num < COMMENT && !yee)
       {
         int32_t bytenums = convert(line, num, num + 1);
         num = num + 2;
         check = line[num];
-        //fix next statement!!!!
         Memory::getInstance() -> putByte(bytenums, addr, yee);
         addr++;
       }
@@ -125,6 +130,10 @@ void Loader::loadline(string line)
 
 int32_t Loader::convert(string swag, int start, int end)
 {
+  //basically what im trying to do is say
+  //string = char at a position of the line,
+  //then you add the next char to that string
+  //and so on. stoul turns string into int. 
   string result;
   for(int i = start; i <= end; i++)
   {
