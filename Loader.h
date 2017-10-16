@@ -8,5 +8,6 @@ class Loader
       Loader(int argc, char * argv[]);
       bool isLoaded();
       bool check(int argc, char * argv[]);
-      void loadline(string line, uint32_t address);
+      void loadline(string line);
+      int32_t convert(string s, int start, int end);
 };

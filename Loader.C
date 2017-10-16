@@ -45,7 +45,8 @@ Loader::Loader(int argc, char * argv[])
      std::string line;
      while (std::getline(infile, line))
      {
-       std::cout << line << "\n";
+       //std::cout << line << "\n";
+       loadline(line);
      }
    }
 
@@ -96,9 +97,41 @@ bool Loader::check(int argc, char * argv[])
     }
 }
 
-void Loader::loadline(string line, uint32_t address)
+void Loader::loadline(string line)
 {
+  if(line[0] == '0')
+  
+  {
+    int32_t addr = convert(line, ADDRBEGIN, ADDREND);
+    if(line[DATABEGIN] != ' ')
+    {
+      int num = DATABEGIN;
+      char check = line[num];
+      bool yee = false;
+      while(check != ' ' && num < COMMENT && !yee)
+      {
+        int32_t bytenums = convert(line, num, num + 1);
+        num = num + 2;
+        check = line[num];
+        //fix next statement!!!!
+        Memory::getInstance() -> putByte(bytenums, addr, yee);
+        addr++;
+      }
+    }
+
+  }
   //Memory::putByte(line,address,false);
+}
+
+int32_t Loader::convert(string swag, int start, int end)
+{
+  string result;
+  for(int i = start; i <= end; i++)
+  {
+    char c = swag[i];
+    result += c;
+  }
+  return stoul(result, NULL, 16);
 }
 
 /**

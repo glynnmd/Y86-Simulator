@@ -43,5 +43,4 @@ if [ $numPasses -ne $numTests ]; then
    echo "Correct output files end with a .idump."
 else
    rm -f -r Outputs
-fi 
-
+fi
