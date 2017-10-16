@@ -2,7 +2,8 @@
 
 rm -f -r Outputs
 mkdir Outputs
-dir="/u/css/classes/3481/164/lab5/Tests"
+
+dir="/u/css/classes/3481/174/lab5/Tests"
 tests=( asumr error1 error2 error3 error4 error5 error6
         error7 error8 error9 error10 error11 error12 )
 
@@ -17,7 +18,7 @@ do
    rm -f $studoutfile
    ./lab5 $infile > $studoutfile
    rm -f diffs
-   ./idiff $instoutfile $studoutfile > diffs
+   diff $instoutfile $studoutfile > diffs
    if [ -s diffs ]; then
       cp $instoutfile Outputs/
       cp $infile Outputs/
@@ -43,4 +44,5 @@ if [ $numPasses -ne $numTests ]; then
    echo "Correct output files end with a .idump."
 else
    rm -f -r Outputs
-fi
+fi 
+
