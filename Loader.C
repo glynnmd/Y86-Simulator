@@ -38,16 +38,17 @@ Loader::Loader(int argc, char * argv[])
    //whether the file successfully opens; if not, return without loading)
 
    //next write a simple loop that reads the file line by line and prints it out
-   if(check(argc, argv))
-   {
+   //
+    if(check(argc,argv))
+    {
      std::ifstream infile(argv[1]);
      std::string line;
      while (std::getline(infile, line))
      {
        //std::cout << line << "\n";
        loadline(line);
-     }
-   }
+      }
+     }      
 
    //next, add a method that will write the data in the line to memory (call that from within
    //your loop)
@@ -109,18 +110,18 @@ void Loader::loadline(string line)
       //num is where the data begins
       //check is to check if the location isnt a space and will change in the loop
       //yee is the boolean needed for putByte
-      int num = DATABEGIN;
+      int32_t num = DATABEGIN;
       char check = line[num];
       bool yee = false;
       //attempts to run convert two char at a time into address
       //and increments address
-      while(check != ' ' && num < COMMENT && !yee)
+      while(check != ' ' &&  num < COMMENT - 1)
       {
         int32_t bytenums = convert(line, num, num + 1);
-        num = num + 2;
-        check = line[num];
         Memory::getInstance() -> putByte(bytenums, addr, yee);
         addr++;
+        num = num + 2;
+        check = line[num];
       }
     }
 
@@ -137,10 +138,9 @@ int32_t Loader::convert(string swag, int start, int end)
   string result;
   for(int i = start; i <= end; i++)
   {
-    char c = swag[i];
-    result += c;
+    result += swag.c_str()[i];
   }
-  return stoul(result, NULL, 16);
+  return stoul(result.c_str(), NULL, 16);
 }
 
 /**
