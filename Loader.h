@@ -8,6 +8,13 @@ class Loader
       Loader(int argc, char * argv[]);
       bool isLoaded();
       bool check(int argc, char * argv[]);
-      void loadline(string line);
-      int32_t convert(string s, int start, int end);
+      void loadLine(std::string line);
+      int32_t convert(std::string s, int start, int end);
+      bool hasErrors(std::string line);
+      bool hasAddress(std::string line);
+      bool hasData(std::string line);
+      bool errorData(std::string line, int32_t & numDBytes);
+      bool addrError(std::string line);
+      bool checkSpaces(std::string line, int32_t start, int32_t end);
+      bool goodFile(char * filename);
 };

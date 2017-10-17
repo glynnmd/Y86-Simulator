@@ -27,7 +27,7 @@ ConditionCodesTester.o: ConditionCodes.h
 Loader.o: Loader.h Memory.h
 
 clean:
-	rm $(OBJ) lab5
+	rm -f $(OBJ) lab5
 
 run:
 	make clean

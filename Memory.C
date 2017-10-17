@@ -19,7 +19,7 @@ Memory * Memory::memInstance = NULL;
  */
 Memory::Memory()
 {
-  for(int i = 0; i < 10; i++)
+  for(int i = 0; i < MEMSIZE; i++)
   {
     mem[i] = 0;
 
@@ -64,7 +64,7 @@ uint64_t Memory::getLong(int32_t address, bool & imem_error)
   else
   {
     imem_error = false;
-    return Tools::buildLong(mem);
+    return Tools::buildLong(&mem[address]);
   }
 }
 

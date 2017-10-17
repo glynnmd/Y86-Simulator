@@ -18,7 +18,7 @@ do
    rm -f $studoutfile
    ./lab5 $infile > $studoutfile
    rm -f diffs
-   diff $instoutfile $studoutfile > diffs
+   diff -b $instoutfile $studoutfile > diffs
    if [ -s diffs ]; then
       cp $instoutfile Outputs/
       cp $infile Outputs/
