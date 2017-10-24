@@ -42,11 +42,10 @@ Loader::Loader(int argc, char * argv[])
 
 bool Loader::hasAddress(std::string line)
 {
-	bool ans = false;
-	
+	bool ans = false;	
 	if (line[0] == '0')
 	{
-		ans = true;
+	ans = true;
 	}
 	return ans;
 }
