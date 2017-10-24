@@ -9,14 +9,7 @@
 #define ADDREND 4
 #define DATABEGIN 7
 #define COMMENT 28
-
-/* 
- * Loader
- * opens up the file named in argv[0] and loads the
- * contents into memory. If the file is able to be loaded,
- * then loaded is set to true.
- */
-//This method is complete and does not need to be modified.  
+ 
 Loader::Loader(int argc, char * argv[])
 {
    std::ifstream inf;  //input file stream for reading from file
@@ -46,18 +39,7 @@ Loader::Loader(int argc, char * argv[])
    loaded = true;
 }
 
-/*
- * hasAddress
- * returns true if the line passed in has an address on it.
- * A line that has an address has a '0' in column 0.
- * It is assumed that the address has already been checked to
- * make sure it is properly formed.
- *
- * @param line - a string containing a line of valid input from 
- *               a .yo file
- * @return true, if the line has an address on it
- *         false, otherwise
- */
+
 bool Loader::hasAddress(std::string line)
 {
 	bool ans = false;
@@ -69,51 +51,16 @@ bool Loader::hasAddress(std::string line)
 	return ans;
 }
 
-/*
- * hasData
- * returns true if the line passed in has data on it.
- * A line that has data does not contain a space
- * at index DATABEGIN.
- * It is assumed that the data has already been checked to
- * make sure it is properly formed.
- *
- * @param line - a string containing a line of valid input from 
- *               a .yo file
- * @return true, if the line has data in it
- *         false, otherwise
- */
+
 bool Loader::hasData(std::string line)
 {
 	
-	return !Loader::checkSpaces(line, DATABEGIN, COMMENT - 1);
-	
-	
-	//bool ans = false;
-	//if (line[DATABEGIN] != ' ')
-	//{
-	//	ans = true;
-	//}
-	
-	//return ans;
+	return !Loader::checkSpaces(line, DATABEGIN, COMMENT - 1);	
 }
 
-/*
- * loadLine
- * The line that is passed in contains an address and data.
- * This method loads that data into memory byte by byte
- * using the Memory::getInstance->putByte method.
- *
- * @param line - a string containing a line of valid input from 
- *               a .yo file. The line contains an address and
- *               a variable number of bytes of data (at least one)
- */
+
 void Loader::loadLine(std::string line)
 {
-   //Hints:
-   //Use the convert method to convert the characters
-   //that represent the address into a number.
-   //Also, use the convert method for each byte of data.
-  //Memory * virtualMem = Memory::getInstance()
 
    int32_t address = Loader::convert(line, 2, 3);
 	bool error = false;
@@ -128,90 +75,38 @@ void Loader::loadLine(std::string line)
 
 }
 
-/*
- * convert
- * takes "len" characters from the line starting at character "start"
- * and converts them to a number, assuming they represent hex characters.
- * For example, if len is 2 and line.c_str()[start] is '1' and 
- * line.c_str()[start + 1] is 'a' then this function returns 26.
- * This function assumes that the line is long enough to hold the desired
- * characters and that the characters represent hex values.
- *
- * @param line - string of characters
- * @param start - starting index in line
- * @param len - represents the number of characters to retrieve
- */
+
 int32_t Loader::convert(std::string line, int32_t start, int32_t len)
 {
-   //Hint: the strtol function is helpful here
-   //char arr[len];
-   
-   std::string linePart = line.substr(start, len);
-   
-   int32_t ans = strtol(linePart.c_str(), NULL, 16);
-  
-   return ans;
-   
-   
+   std::string linePart = line.substr(start, len);   
+   int32_t ans = strtol(linePart.c_str(), NULL, 16); 
+   return ans;  
 }
 
-/*
- * hasErrors
- * Returns true if the line file has errors in it and false
- * otherwise.
- *
- * @param line - a string that contains a line from a .yo file
- * @return true, if the line has errors 
- *         false, otherwise
- */
+
 bool Loader::hasErrors(std::string line)
 {
-   //checking for errors in a particular order can significantly 
-   //simplify your code
-   //1) line is at least 29 characters long and contains a '|' in column 28
-   //   if not, return true
-   
     if (line.length() < 29 || line[28] != '|')
     {
         return true;
     }
-   
-   //2) check whether line has an address.  If it doesn't,
-   //   return result of checkSpaces (line must be all spaces up
-   //   to the | character)
-   //   Hint: use hasAddress and checkSpaces
+  
    
     if (!Loader::hasAddress(line))
     {
-        return !Loader::checkSpaces(line, 0, COMMENT - 1);
-        
-           
-        
+        return !Loader::checkSpaces(line, 0, COMMENT - 1);      
     }
-  
 
-   //3) return true if the address is invalid
-   //   Hint: use errorAddress 
-   
     if(Loader::errorAddr(line))
     {
         return true;
     }
-
-   //4) check whether the line has data. If it doesn't
-   //   return result of checkSpaces (line must be all spaces from
-   //   after the address up to the | character)
-   //   Hint: use hasData and checkSpaces
 
     if(!Loader::hasData(line))
     {
 
         return Loader::checkSpaces(line, ADDREND + 1, COMMENT - 1);
     }
-
-   //5) if you get past 4), line has an address and data. Check to
-   //   make sure the data is valid using errorData
-   //   Hint: use errorData
         int32_t count = 0;
         for (int i = DATABEGIN; i != ' '; i++)
         {
@@ -225,36 +120,16 @@ bool Loader::hasErrors(std::string line)
             return true;
         }
 
-   //6) if you get past 5), line has a valid address and valid data.
-   //   Make sure that the address on this line is > the last address
-   //   stored to (lastAddress is a private data member)
-   //   Hint: use convert to convert address to a number and compare
-   //   to lastAddress
-
     int32_t current = Loader::convert(line, ADDRBEGIN, 3);    
     if (current <= lastAddress)
     {
         return true;
     }
-
-   //7) Make sure that the last address of the data to be stored
-   //   by this line doesn't exceed the memory size
-   //   Hint: use numDBytes as set by errorData, MEMSIZE in Memory.h,
-   //         and addr returned by convert
-
- 
- if (Loader::convert(line, ADDRBEGIN, 3) + arg > MEMSIZE)
-    
+ if (Loader::convert(line, ADDRBEGIN, 3) + arg > MEMSIZE) 
     {
         return true;
     }
-    
-   
-   // if control reaches here, no errors found
-   
-   
-   
-   
+     
    return false;
 }
 
@@ -275,13 +150,10 @@ bool Loader::hasErrors(std::string line)
  */
 bool Loader::errorData(std::string line, int32_t & numDBytes)
 {
-   //Hint: use isxdigit and checkSpaces
     
     bool ans = false;
     int i = DATABEGIN;
-    int count = 0;
-
-	
+    int count = 0;	
     do
     {
         if(!isxdigit(line[i]))
@@ -365,6 +237,20 @@ bool Loader::checkSpaces(std::string line, int32_t start, int32_t end)
     return ans;
 }
 
+bool Loader::goodFile(char * filename)
+{
+   bool answer = false;
+   int len = strlen(filename);
+   const char *lastThree = &filename[len-3];
+   char * stringIwant = ".yo";
+   if (len >= 4 && !strcmp(stringIwant, lastThree))
+   {
+	   answer = true;   
+   }
+   return answer;
+}
+
+
 /*
  * isLoaded
  * getter for the private loaded data member
@@ -374,29 +260,4 @@ bool Loader::isLoaded()
    return loaded;  
 }
 
-/*
- * goodFile
- * returns true if the name of the file passed in is a properly 
- * formed .yo filename. A properly formed .yo file name is at least
- * four characters in length and ends with a .yo extension.
- *
- * @return true - if the filename is properly formed
- *         false - otherwise
- */
-bool Loader::goodFile(char * filename)
-{
-   //Hint: use strlen and strcmp
-   bool ans = false;
-   int len = strlen(filename);
-   const char *lastThree = &filename[len-3];
-   char * str2 = ".yo";
-	
-	
-   if (len >= 4 
-   && !strcmp(str2, lastThree))
-   {
-	   ans = true;   
-   }
-   return ans;
-}
 //
