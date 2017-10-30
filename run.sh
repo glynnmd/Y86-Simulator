@@ -2,10 +2,10 @@
 
 rm -f -r Outputs
 mkdir Outputs
-
-dir="/u/css/classes/3481/174/lab5/Tests"
-tests=( asumr error1 error2 error3 error4 error5 error6
-        error7 error8 error9 error10 error11 error12 )
+chmod g+rwx Outputs
+dir="/u/css/classes/3481/174/lab6/Tests"
+tests=( error1 error2 error3 error4 error5 error6
+        error7 error8 error9 error10 error11 error12 nop )
 
 numTests=0
 numPasses=0
@@ -16,10 +16,10 @@ do
    studoutfile="$atest.sdump"
    instoutfile="$dir/$atest.idump"
    rm -f $studoutfile
-   ./lab5 $infile > $studoutfile
+   ./yess $infile > $studoutfile
    rm -f diffs
-   diff -b $instoutfile $studoutfile > diffs
-   if [ -s diffs ]; then
+   diff $instoutfile $studoutfile > diffs
+   if [ ! -e $studoutfile ] ||  [ ! -s $studoutfile ] || [ -s diffs ]; then
       cp $instoutfile Outputs/
       cp $infile Outputs/
       mv $studoutfile Outputs/
@@ -42,6 +42,7 @@ if [ $numPasses -ne $numTests ]; then
    echo "Input files end with a .yo."
    echo "Your output files end with a .sdump."
    echo "Correct output files end with a .idump."
+   chmod g+rw Outputs/*
 else
    rm -f -r Outputs
 fi 
