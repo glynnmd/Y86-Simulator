@@ -9,9 +9,13 @@
 #include "M.h"
 #include "W.h"
 #include "Stage.h"
+#include "Instructions.h"
+#include "ExecuteStage.h"
+#include "MemoryStage.h"
 #include "DecodeStage.h"
 #include "Status.h"
 #include "Debug.h"
+
 
 /*
  * doClockLow:
@@ -25,16 +29,24 @@
 
 bool DecodeStage::doClockLow(PipeReg ** pregs, Stage ** stages)
 {
-   D * dreg = (D *) pregs[DREG];
-   E * ereg = (E *) pregs[EREG];
+   D * dreg = (D*)pregs[DREG];
+   E * ereg = (E*)pregs[EREG];
+   // i took away f_pc = 0 might want to add back - idk - frabcis
 
-   uint64_t f_pc, icode = 0, ifun = 0, valC = 0, valA = 0, valB = 0; 
+   uint64_t icode = 0, ifun = 0, valC = 0, valA = 0, valB = 0; 
    uint64_t dstE = RNONE, dstM = RNONE, srcA = RNONE, srcB = RNONE, stat = SAOK;
 
    stat = dreg->getstat()->getOutput();
    icode = dreg->geticode()->getOutput();
    ifun = dreg->getifun()->getOutput();
    valC = dreg->getvalC()->getOutput();
+   srcA = d_srcA(icode, dreg->getrA()->getOutput());
+   srcB = d_srcB(icode, dreg->getrB()->getOutput());
+   dstE = d_dstE(icode, dreg->getrB()->getOutput());
+   dstM = d_dstM(icode, dreg->getrA()->getOutput());
+
+   //valA = SelFwdA(srcA);
+   //valB = FwdB(srcB);
 
    setEInput(ereg, stat, icode, ifun, valC, valA, valB, dstE, dstM, srcA, srcB);
    return false;
@@ -89,3 +101,126 @@ void DecodeStage::setEInput(E * ereg, uint64_t stat, uint64_t icode,
    ereg->getsrcA()->setInput(srcA);
    ereg->getsrcB()->setInput(srcB);
 }
+
+uint64_t DecodeStage::d_srcA(uint64_t d_icode, uint64_t D_rA)
+{
+   if(d_icode == IRRMOVQ || d_icode == IRMMOVQ || d_icode == IOPQ || d_icode == IPUSHQ)
+   {
+      return D_rA;
+   }
+   else if (d_icode == IPOPQ || d_icode == IRET)
+   {
+      return RSP;
+   }
+   else
+   {
+      return RNONE;
+   }
+}
+
+uint64_t DecodeStage::d_srcB(uint64_t d_icode, uint64_t D_rB)
+{
+   if(d_icode == IRMMOVQ || d_icode == IOPQ || d_icode == IMRMOVQ)
+   {
+      return D_rB;
+   }
+   else if (d_icode == IPOPQ || d_icode == IRET || d_icode == IPUSHQ || d_icode == ICALL)
+   {
+      return RSP;
+   }
+   else
+   {
+      return RNONE;
+   }
+}
+
+uint64_t DecodeStage::d_dstE(uint64_t d_icode, uint64_t D_rB)
+{
+   if(d_icode == IRRMOVQ || d_icode == IOPQ || d_icode == IIRMOVQ)
+   {
+      return D_rB;
+   }
+   else if (d_icode == IPOPQ || d_icode == IRET || d_icode == IPUSHQ || d_icode == ICALL)
+   {
+      return RSP;
+   }
+   else
+   {
+      return RNONE;
+   }
+}
+
+uint64_t DecodeStage::d_dstM(uint64_t d_icode, uint64_t D_rA)
+{
+   if(d_icode == IMRMOVQ || d_icode == IPOPQ)
+   {
+      return D_rA;
+   }
+   else
+   {
+      return RNONE;
+   }
+}
+uint64_t DecodeStage::SelFwdA(uint64_t d_rvalA)
+{
+   return d_rvalA;
+}
+uint64_t DecodeStage::FwdB(uint64_t d_rvalB)
+{
+   return d_rvalB;
+}
+
+uint64_t DecodeStage::d_valA(ExecuteStage *e_stage,MemoryStage * m_stage, M * m_reg, W *w_reg, uint64_t d_srcA)
+{
+
+   uint64_t e_dstE = e_stage->get_dstE();
+   uint64_t M_dstE = m_reg->getdstE()->getOutput();
+   uint64_t W_dstE = w_reg->getdstE()->getOutput();
+   bool *flag = false;
+
+   if(d_srcA == e_dstE)
+   {
+      return e_stage->get_valeE();
+   }
+
+   if(d_srcA == M_dstE)
+   {
+      return m_reg->getvalE()->getOutput();
+   }
+
+   if(d_srcA == W_dstE)
+   {
+      return w_reg->getvalE()->getOutput();
+   }
+
+   RegisterFile * reg = RegisterFile::getInstance();
+   return reg->readRegister(d_srcA,*flag);
+   
+}
+
+uint64_t DecodeStage::d_valB(ExecuteStage *e_stage,MemoryStage * m_stage, M * m_reg, W *w_reg, uint64_t d_srcB)
+{
+   uint64_t e_dstE = e_stage->get_dstE();
+   uint64_t M_dstE = m_reg->getdstE()->getOutput();
+   uint64_t W_dstE = w_reg->getdstE()->getOutput();
+   bool *flag = false;
+
+   if(d_srcB == e_dstE)
+   {
+      return e_stage->get_valeE();
+   }
+
+   if(d_srcB == M_dstE)
+   {
+      return m_reg->getvalE()->getOutput();
+   }
+
+   if(d_srcB == W_dstE)
+   {
+      return w_reg->getvalE()->getOutput();
+   }
+
+   RegisterFile * reg = RegisterFile::getInstance();
+   return reg->readRegister(d_srcB,*flag);
+}
+

@@ -40,11 +40,22 @@ bool FetchStage::doClockLow(PipeReg ** pregs, Stage ** stages)
    //written.
    f_pc = selectPC(pregs);
    bool err = false; 
-   icode = Memory::getInstance()->getByte((uint32_t)f_pc, err);
+   icode = Memory::getInstance()->getByte(f_pc, err);
    ifun = Tools::getBits(icode, 0, 3);
    icode = Tools::getBits(icode, 4, 7);
-   valP = PCincrement(f_pc, needRegIds(icode), needValC(icode));
+   bool needreg = needRegIds(icode);
+   bool needval = needValC(icode);
+   valP = PCincrement(f_pc, needreg, needval);
    uint64_t predictionPC = predictPC(icode, valC, valP);
+   uint8_t gByte = Memory::getInstance()->getByte(f_pc + 1, err);
+   if(needreg)
+   {
+      getRegIds(gByte, &rA, &rB);
+   }
+   if(needval)
+   {     
+      valC = buildValC(f_pc, needreg);
+   }
 
    freg->getpredPC()->setInput(predictionPC);
 
@@ -163,3 +174,35 @@ uint64_t FetchStage::PCincrement(uint64_t pc, bool reg, bool fvalC)
 {
    return pc + 1 + reg + (8 * fvalC);
 }
+
+void FetchStage::getRegIds(uint64_t f_pc, uint64_t *rA, uint64_t *rB)
+{
+   *rA = Tools::getBits(f_pc, 4, 7);
+   *rB = Tools::getBits(f_pc, 0, 3);
+}
+
+uint64_t FetchStage::buildValC(uint64_t f_pc, bool regId)
+{
+   Memory * memory = Memory::getInstance();
+   bool error = false; 
+
+   uint8_t c[8];
+   if(regId == true)
+   {
+      for (int i = 0; i < 8; i++)
+      {
+         c[i] = memory->getByte(f_pc + i + 2, error);
+      }
+   }
+   else
+   {
+      for (int i = 0; i < 8; i++)
+      {
+         c[i] = memory->getByte(f_pc + i + 1, error);
+      }
+   }
+   return Tools::buildLong(c);
+}
+
+
+
