@@ -33,12 +33,28 @@ bool ExecuteStage::doClockLow(PipeReg ** pregs, Stage ** stages)
 	E * ereg = (E *) pregs[EREG];
 	M * mreg = (M *) pregs[MREG];
 
-	uint64_t stat = SAOK, icode = ereg->geticode()->getOutput(), Cnd = 0, valE = 0;
-	uint64_t valA = ereg->getvalA()->getOutput(), dstE = ereg->getdstE()->getOutput(), dstM = ereg->getdstM()->getOutput();
+	uint64_t stat = ereg->getstat()->getOutput();
+	uint64_t icode = ereg->geticode()->getOutput();
+	uint64_t Cnd = 0;
+	uint64_t valE = 0;
+	uint64_t valA = ereg->getvalA()->getOutput();
+	dstE = ereg->getdstE()->getOutput();
+	uint64_t dstM = ereg->getdstM()->getOutput();
 
-	//lab 7
+	//get values
 	uint64_t valC = ereg->getvalC()->getOutput();
-	valE = valC;
+	uint64_t ifun = ereg->getifun()->getOutput();
+	uint64_t valB = ereg->getvalB()->getOutput();
+
+	uint64_t alua = aluA(icode, valA, valC);
+	uint64_t alub = aluB(icode, valB);
+	uint64_t e_alufun = alufun(icode, ifun);
+
+	//bool set for ALU execution
+	bool bo = set_cc(icode);
+	valE = ALU(e_alufun,alua, alub, bo);
+	Cnd = condtionalLogic(ifun, icode);
+	dstE = e_dstE(icode, dstE, Cnd);
 
 	setMInput(mreg, stat, icode, Cnd, valE, valA, dstE, dstM);
 	return false;
@@ -52,20 +68,7 @@ bool ExecuteStage::doClockLow(PipeReg ** pregs, Stage ** stages)
  */
 void ExecuteStage::doClockHigh(PipeReg ** pregs)
 {
-   E * ereg = (E *) pregs[EREG];
    M * mreg = (M *) pregs[MREG];
-
-   ereg->getstat()->normal();
-   ereg->geticode()->normal();
-   ereg->getifun()->normal();
-   ereg->getvalC()->normal();
-   ereg->getvalA()->normal();
-   ereg->getvalB()->normal();
-   ereg->getdstE()->normal();
-   ereg->getdstM()->normal();
-   ereg->getsrcA()->normal();
-   ereg->getsrcB()->normal();
-
    mreg->getstat()->normal();
    mreg->geticode()->normal();
    mreg->getCnd()->normal();
@@ -117,7 +120,7 @@ uint64_t ExecuteStage::aluA(uint64_t e_icode, uint64_t e_valA, uint64_t e_valC)
 		case IPOPQ:
 		return 8;
 		break;
-		default :
+		default:
 		return 0;
 		break;
 
@@ -177,20 +180,20 @@ uint64_t ExecuteStage::get_dstE()
 	return dstE;
 }
 
-uint64_t ExecuteStage::get_valeE()
+uint64_t ExecuteStage::get_valE()
 {
-	return valeE;
+	return valE;
 }
  
 
 uint64_t ExecuteStage::condtionalLogic(uint64_t ifun, uint64_t icode)
 {
 	ConditionCodes * codes = ConditionCodes::getInstance();
-	bool *flag = false;
+	bool flag = false;
 	//FLAGS - FRANCIS was here :D
-	uint8_t zeroFlag = codes->getConditionCode(ZF,*flag);
-	uint8_t overFLow = codes->getConditionCode(OF,*flag);
-	uint8_t signFlag = codes->getConditionCode(SF,*flag);
+	uint8_t zeroFlag = codes->getConditionCode(ZF,flag);
+	uint8_t overFLow = codes->getConditionCode(OF,flag);
+	uint8_t signFlag = codes->getConditionCode(SF,flag);
 	if(icode == ICMOVXX || icode == IJXX)
 	{
 		switch(ifun)
@@ -199,7 +202,7 @@ uint64_t ExecuteStage::condtionalLogic(uint64_t ifun, uint64_t icode)
 				return (zeroFlag == 1);
 				break;
 			case NOTEQUAL:
-				return (zeroFlag);
+				return (zeroFlag == 0);
 				break;
 			case GREATER:
 				return ((signFlag ^ overFLow)  == 0 && zeroFlag == 0); //this might need to be changed
@@ -227,34 +230,33 @@ uint64_t ExecuteStage::condtionalLogic(uint64_t ifun, uint64_t icode)
 uint64_t ExecuteStage::ALU(uint64_t alufun, uint64_t aluA, uint64_t aluB, bool condtionscheck)
 {
 	uint64_t answer = 0;
-	bool set;
+	bool set = 0;
 
 	switch(alufun)
 	{
 		case XORQ:
-			 answer = aluA ^ aluB;
-			 return answer;
-			 break;
+			answer = aluA ^ aluB;
+			break;
 		case ANDQ:
 			answer = aluA & aluB;
-			return answer;
 			break;
 		case ADDQ:
+			set = Tools::addOverflow(aluA,aluB);
 			answer = aluA + aluB;
-			return answer;
 			break;
 		case SUBQ:
-			 answer = aluB - aluA;
-			 return answer;
+			answer = aluB - aluA;
+			set = Tools::subOverflow(aluA, aluB);
 			 break;
 	}
 
-	if(condtionscheck == true)
+	if(condtionscheck)
 	{
+		bool checker = false;
 		ConditionCodes * codes = ConditionCodes::getInstance();
-		codes->setConditionCode((0), ZF, set);
-		codes->setConditionCode(Tools::sign(answer),SF, set);
-		codes->setConditionCode(set,OF, set);
+		codes->setConditionCode((answer == 0), ZF, checker);
+		codes->setConditionCode(Tools::sign(answer),SF, checker);
+		codes->setConditionCode(set,OF, checker);
 	}
 
 	return answer;

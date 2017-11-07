@@ -2,7 +2,7 @@
 class ExecuteStage: public Stage
 {
    public:
-    uint64_t dstE, valeE;
+    uint64_t dstE, valE;
       bool doClockLow(PipeReg ** pregs, Stage ** stages);
       void doClockHigh(PipeReg ** pregs);
       void setMInput(M * mreg, uint64_t stat, uint64_t icode,
@@ -14,7 +14,7 @@ class ExecuteStage: public Stage
      bool set_cc(uint64_t e_icode);
      uint64_t e_dstE(uint64_t e_icode, uint64_t e_dstE, uint64_t e_cnd);
      uint64_t get_dstE();
-     uint64_t get_valeE();
+     uint64_t get_valE();
      uint64_t condtionalLogic(uint64_t ifun, uint64_t icode);
      uint64_t ALU(uint64_t alufun, uint64_t aluA, uint64_t aluB, bool condtionscheck);
 
