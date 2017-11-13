@@ -36,7 +36,6 @@ bool ExecuteStage::doClockLow(PipeReg ** pregs, Stage ** stages)
 	uint64_t stat = ereg->getstat()->getOutput();
 	uint64_t icode = ereg->geticode()->getOutput();
 	uint64_t Cnd = 0;
-	uint64_t valE = 0;
 	uint64_t valA = ereg->getvalA()->getOutput();
 	dstE = ereg->getdstE()->getOutput();
 	uint64_t dstM = ereg->getdstM()->getOutput();
@@ -170,7 +169,11 @@ bool ExecuteStage::set_cc(uint64_t e_icode)
 
 uint64_t ExecuteStage::e_dstE(uint64_t e_icode, uint64_t e_dstE, uint64_t e_cnd)
 {
-	if(e_icode == IRRMOVQ && !e_cnd) return RNONE;
+	if(e_icode == IRRMOVQ && !e_cnd)
+	{
+		return RNONE;
+	}
+
 	return e_dstE;
 }
 
@@ -184,7 +187,7 @@ uint64_t ExecuteStage::get_valE()
 {
 	return valE;
 }
- 
+
 
 uint64_t ExecuteStage::condtionalLogic(uint64_t ifun, uint64_t icode)
 {
@@ -222,9 +225,9 @@ uint64_t ExecuteStage::condtionalLogic(uint64_t ifun, uint64_t icode)
 
 		}
 	}
-	
+
 		return 0;
-	
+
 }
 
 uint64_t ExecuteStage::ALU(uint64_t alufun, uint64_t aluA, uint64_t aluB, bool condtionscheck)
@@ -235,17 +238,17 @@ uint64_t ExecuteStage::ALU(uint64_t alufun, uint64_t aluA, uint64_t aluB, bool c
 	switch(alufun)
 	{
 		case XORQ:
-			answer = aluA ^ aluB;
+			answer = (aluA ^ aluB);
 			break;
 		case ANDQ:
-			answer = aluA & aluB;
+			answer = (aluA & aluB);
 			break;
 		case ADDQ:
 			set = Tools::addOverflow(aluA,aluB);
-			answer = aluA + aluB;
+			answer = (aluA + aluB);
 			break;
 		case SUBQ:
-			answer = aluB - aluA;
+			answer = (aluB - aluA);
 			set = Tools::subOverflow(aluA, aluB);
 			 break;
 	}
