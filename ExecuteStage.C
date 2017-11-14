@@ -202,22 +202,22 @@ uint64_t ExecuteStage::condtionalLogic(uint64_t ifun, uint64_t icode)
 		switch(ifun)
 		{
 			case EQUAL:
-				return (zeroFlag == 1);
+				return (zeroFlag);
 				break;
 			case NOTEQUAL:
-				return (zeroFlag == 0);
+				return (!zeroFlag);
 				break;
 			case GREATER:
-				return ((signFlag ^ overFLow)  == 0 && zeroFlag == 0); //this might need to be changed
+				return (!(signFlag ^ overFLow) && !zeroFlag); //this might need to be changed
 				break;
 			case GREATEREQ:
-				return((signFlag ^ overFLow) == 0);
+				return(!(signFlag ^ overFLow));
 				break;
 			case LESS:
 				return (signFlag ^ overFLow); //this can be cleaned up
 				break;
 			case LESSEQ:
-				return ((signFlag ^ overFLow) || zeroFlag == 1);
+				return ((signFlag ^ overFLow) || zeroFlag);
 				break;
 			case UNCOND:
 				return 1;

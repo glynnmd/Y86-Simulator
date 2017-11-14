@@ -29,24 +29,25 @@ bool FetchStage::doClockLow(PipeReg ** pregs, Stage ** stages)
 {
    F * freg = (F *) pregs[FREG];
    D * dreg = (D *) pregs[DREG];
-   uint64_t f_pc = 0, icode = 0, ifun = 0, valC = 0, valP = 0;
+   uint64_t icode = 0, ifun = 0, valC = 0, valP = 0;
    uint64_t rA = RNONE, rB = RNONE, stat = SAOK;
-
+   bool err = false; 
    //code missing here to select the value of the PC
    //and fetch the instruction from memory
    //Fetching the instruction will allow the icode, ifun,
    //rA, rB, and valC to be set.
    //The lab assignment describes what methods need to be
    //written.
-   f_pc = selectPC(pregs);
-   bool err = false; 
+   int32_t f_pc = selectPC(pregs);
+
+   //set icode/ifun
    icode = Memory::getInstance()->getByte(f_pc, err);
    ifun = Tools::getBits(icode, 0, 3);
    icode = Tools::getBits(icode, 4, 7);
+
+
    bool needreg = needRegIds(icode);
    bool needval = needValC(icode);
-   valP = PCincrement(f_pc, needreg, needval);
-   uint64_t predictionPC = predictPC(icode, valC, valP);
    uint8_t gByte = Memory::getInstance()->getByte(f_pc + 1, err);
    if(needreg)
    {
@@ -56,6 +57,8 @@ bool FetchStage::doClockLow(PipeReg ** pregs, Stage ** stages)
    {     
       valC = buildValC(f_pc, needreg);
    }
+   valP = PCincrement(f_pc, needreg, needval);
+   uint64_t predictionPC = predictPC(icode, valC, valP);
 
    freg->getpredPC()->setInput(predictionPC);
 
@@ -121,7 +124,7 @@ uint64_t FetchStage::selectPC(PipeReg ** pregs)
    M * mreg = (M *) pregs[MREG];
    W * wreg = (W *) pregs[WREG];
 
-   if(mreg->geticode()->getOutput() == IJXX && mreg->geticode()->getOutput() != mreg->getCnd()->getOutput())
+   if(mreg->geticode()->getOutput() == IJXX && !mreg->getCnd()->getOutput())
    {
       return mreg->getvalA()->getOutput();
    }
@@ -139,7 +142,7 @@ bool FetchStage::needRegIds(uint64_t f_icode)
 {
    if(f_icode == IRRMOVQ || f_icode == IOPQ
       || f_icode == IPUSHQ || f_icode == IPOPQ 
-      || f_icode == IIRMOVQ || f_icode == IRMMOVQ)
+      || f_icode == IIRMOVQ || f_icode == IRMMOVQ || f_icode == IMRMOVQ)
    {
       return true;
    }
@@ -175,10 +178,10 @@ uint64_t FetchStage::PCincrement(uint64_t pc, bool reg, bool fvalC)
    return pc + 1 + reg + (8 * fvalC);
 }
 
-void FetchStage::getRegIds(uint64_t f_pc, uint64_t *rA, uint64_t *rB)
+void FetchStage::getRegIds(uint64_t rbyte, uint64_t *rA, uint64_t *rB)
 {
-   *rA = Tools::getBits(f_pc, 4, 7);
-   *rB = Tools::getBits(f_pc, 0, 3);
+   *rA = Tools::getBits(rbyte, 4, 7);
+   *rB = Tools::getBits(rbyte, 0, 3);
 }
 
 uint64_t FetchStage::buildValC(uint64_t f_pc, bool regId)

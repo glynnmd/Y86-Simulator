@@ -12,6 +12,6 @@ class DecodeStage: public Stage
       uint64_t d_srcB(uint64_t d_icode, PipeRegField *  rB);
       uint64_t d_dstE(uint64_t d_icode, PipeRegField *  rB);
       uint64_t d_dstM(uint64_t d_icode, PipeRegField *  rA);
-      uint64_t d_valA(ExecuteStage *e_stage,  M * m_reg, W * w_reg, uint64_t d_srcA);
-      uint64_t d_valB(ExecuteStage *e_stage, M * m_reg, W *w_reg, uint64_t d_srcB);
+      uint64_t d_valA(ExecuteStage *e_stage,  M * m_reg, W * w_reg, uint64_t d_srcA, MemoryStage *m_stage);
+      uint64_t d_valB(ExecuteStage *e_stage, M * m_reg, W *w_reg, uint64_t d_srcB,  MemoryStage *m_stage);
 };
