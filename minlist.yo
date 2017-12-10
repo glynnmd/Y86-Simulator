@@ -1,0 +1,46 @@
+0x000:                      |          .pos 0
+0x000: 30f40002000000000000 |          irmovq stack, %rsp
+0x00a: 30f20800000000000000 |          irmovq $8, %rdx
+0x014: 30f7a800000000000000 |          irmovq list, %rdi
+0x01e: 802800000000000000   |          call minList
+0x027: 00                   |          halt
+                            | #
+                            | # minList: return the minimum value of the elements of a NULL terminated list
+                            | # parameter: %rdi contains the value list, which
+                            | #            is the adress of the first element in the list
+                            | # return: %rax contains the minimum value in the list
+0x028:                      | minList: 
+0x028: 50370000000000000000 |          mrmovq (%rdi), %rbx
+0x032: 30f00000000000000000 |          irmovq 0, %rax
+0x03c: 6030                 |          addq %rbx, %rax
+0x03e: 6027                 |          addq %rdx, %rdi
+0x040: 50370000000000000000 |          mrmovq (%rdi), %rbx
+0x04a: 30f30000000000000000 |          irmovq 0, %rbx
+0x054: 6031                 |          addq %rbx, %rcx
+0x056: 2009                 |          rrmovq %rax, %r9
+0x058: 201a                 |          rrmovq %rcx, %r10
+0x05a: 619a                 |          subq %r9, %r10
+0x05c: 728500000000000000   |          jl Fran
+0x065: 400f0000000000000000 |          rmmovq %rax, %rsi
+0x06f: 6233                 |          andq %rbx, %rbx
+0x071: 742800000000000000   |          jne minList
+0x07a: 40af0000000000000000 |          rmmovq %r10, %rax
+0x084: 90                   |          ret         
+0x085:                      | Fran:    
+0x085: 400f0000000000000000 |          rmmovq %rax, %rsi
+0x08f: 6233                 |          andq %rbx, %rbx
+0x091: 742800000000000000   |          jne minList
+0x09a: 40af0000000000000000 |          rmmovq %r10, %rax
+0x0a4: 90                   |          ret  
+0x0a8:                      |          .align 8
+0x0a8: 1600000000000000     | list:    .quad 22
+0x0b0: 3500000000000000     |          .quad 53
+0x0b8: f9ffffffffffffff     |          .quad -7 
+0x0c0: 0100000000000000     |          .quad 1
+0x0c8: feffffffffffffff     |          .quad -2
+0x0d0: 2a00000000000000     |          .quad 42
+0x0d8: fbffffffffffffff     |          .quad -5
+0x0e0: 0000000000000000     |          .quad 0  #indicates the end of the list
+                            | #
+0x200:                      |          .pos 0x200
+0x200:                      | stack:

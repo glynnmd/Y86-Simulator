@@ -1,0 +1,44 @@
+0x000:                      |           .pos 0
+0x000: 30f40004000000000000 | main:     irmovq stack, %rsp
+                            |           #initialize %rdi to the number of
+                            |           #fibonacci numbers to compute
+0x00a: 30f71400000000000000 |           irmovq $20, %rdi
+                            |           #initialize %rsi to the address
+                            |           #of where to store the numbers
+0x014: 30f68800000000000000 |           irmovq fibolst, %rsi
+0x01e: 802800000000000000   |           call fibo
+0x027: 00                   |           halt
+                            | # fibo 
+                            | # Computes fibonacci numbers
+                            | # param: %rdi - contains a count of the 
+                            | #        number of fibonacci numbers to 
+                            | #        compute
+                            | # param: %rsi - contains the starting 
+                            | #        address in memory of where to
+                            | #        store the numbers
+                            | #
+0x028:                      | fibo:     #put your code here
+0x028: 50c60000000000000000 | 		 mrmovq (%rsi), %r12
+0x032: 30fa0800000000000000 | 		 irmovq 8, %r10
+0x03c: 30fb0100000000000000 | 		 irmovq 1, %r11
+0x046: 30f00100000000000000 | 		 irmovq 1, %rax
+0x050: 30f8ffffffffffffffff | 		 irmovq -1, %r8
+0x05a: 706300000000000000   | 		 jmp loopbaby
+                            | 
+0x063:                      | loopbaby: 
+0x063: 60c0                 | 		 addq %r12, %rax
+0x065: 50c60000000000000000 | 		 mrmovq (%rsi), %r12
+0x06f: 60a6                 | 		 addq %r10, %rsi
+0x071: 40060000000000000000 | 		 rmmovq %rax, (%rsi)
+0x07b: 61b7                 | 		 subq %r11, %rdi
+0x07d: 746300000000000000   | 		 jne loopbaby
+0x086: 90                   | 		 ret
+                            | 
+                            | 
+                            |         
+0x087: 90                   | done:     ret
+                            | #
+0x088:                      |           .align 8
+0x088: 0000000000000000     | fibolst:  .quad 0 
+0x400:                      |           .pos 0x400 
+0x400:                      | stack:    

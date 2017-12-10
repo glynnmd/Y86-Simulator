@@ -1,0 +1,50 @@
+0x000:                      | .pos 0
+                            | 
+0x000: 30fc0800000000000000 | irmovq $8, %r12
+0x00a: 30f80000000000000000 | irmovq $0, %r8
+0x014: 30f90100000000000000 | irmovq $1, %r9
+0x01e: 30f0a800000000000000 | irmovq leList, %rax
+0x028: 50a00000000000000000 | mrmovq (%rax), %r10
+0x032: 10                   | nop ##shout out to 3 nops
+0x033: 10                   | nop
+0x034: 10                   | nop
+0x035: 608a                 | addq %r8, %r10
+0x037: 218a                 | cmovle %r8, %r10
+0x039: 269a                 | cmovg %r9, %r10
+0x03b: 40a00000000000000000 | rmmovq %r10, (%rax)
+0x045: 60c0                 | addq %r12, %rax
+0x047: 50a00000000000000000 | mrmovq (%rax), %r10
+0x051: 10                   | nop
+0x052: 10                   | nop
+0x053: 10                   | nop
+0x054: 608a                 | addq %r8, %r10
+0x056: 219a                 | cmovle %r9, %r10
+0x058: 269a                 | cmovg %r9, %r10
+0x05a: 40a00000000000000000 | rmmovq %r10, (%rax)
+0x064: 60c0                 | addq %r12, %rax
+0x066: 50a00000000000000000 | mrmovq (%rax), %r10
+0x070: 10                   | nop
+0x071: 10                   | nop
+0x072: 10                   | nop
+0x073: 608a                 | addq %r8, %r10
+0x075: 218a                 | cmovle %r8, %r10
+0x077: 269a                 | cmovg %r9, %r10
+0x079: 40a00000000000000000 | rmmovq %r10, (%rax)
+0x083: 60c0                 | addq %r12, %rax
+0x085: 50a00000000000000000 | mrmovq (%rax), %r10
+0x08f: 10                   | nop
+0x090: 10                   | nop
+0x091: 10                   | nop
+0x092: 608a                 | addq %r8, %r10
+0x094: 218a                 | cmovle %r8, %r10
+0x096: 269a                 | cmovg %r9, %r10
+0x098: 40a00000000000000000 | rmmovq %r10, (%rax)
+0x0a2: 6010                 | addq %rcx, %rax
+0x0a8:                      | .align 8
+                            | 
+0x0a8: 1700000000000000     | leList: .quad 23
+0x0b0: 0700000000000000     | 		.quad 7
+0x0b8: 0000000000000000     | 		.quad 0
+0x0c0: 0800000000000000     | 		.quad 8
+0x0c8: 00                   | halt
+                            | 

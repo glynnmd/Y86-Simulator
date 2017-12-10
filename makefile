@@ -51,9 +51,8 @@ ConditionCodes.o: ConditionCodes.h Tools.h
 Loader.o: Loader.h Memory.h
 
 clean:
-	rm $(OBJ) lab8
+	rm $(OBJ) yess
 
 run:
-	make clean
 	make yess
 	./run.sh

@@ -215,7 +215,6 @@ uint64_t Tools::setByte(uint64_t source, int32_t byteNum)
  */
 uint8_t Tools::sign(uint64_t source)
 {
-   source = clearBits(source, 0, 62); 
    source = source >> 63; 
    return source; 
 }

@@ -36,23 +36,25 @@ bool DecodeStage::doClockLow(PipeReg ** pregs, Stage ** stages)
    ExecuteStage * e_stage = (ExecuteStage*)stages[ESTAGE];
    MemoryStage * m_stage = (MemoryStage*)stages[MSTAGE];
 
-   // i took away f_pc = 0 might want to add back - idk - francis
-
    uint64_t stat = dreg->getstat()->getOutput();
    uint64_t icode = dreg->geticode()->getOutput();
    uint64_t ifun = dreg->getifun()->getOutput();
    uint64_t valC = dreg->getvalC()->getOutput();
-   uint64_t dstE = d_dstE(icode, dreg->getrB()); //From D.c just realized that lol
+   uint64_t valP = dreg->getvalP()->getOutput();
+   uint64_t dstE = d_dstE(icode, dreg->getrB());
    uint64_t dstM = d_dstM(icode, dreg->getrA());
-   uint64_t srcA = d_srcA(icode, dreg->getrA());
-   uint64_t srcB = d_srcB(icode, dreg->getrB());
-   uint64_t valA = d_valA(e_stage, mreg, wreg, srcA, m_stage);
-   uint64_t valB = d_valB(e_stage, mreg, wreg, srcB, m_stage);
 
+   //grabs srca/srcb from D register, grabs Cnd from e stage and calculates the control signals
+   srcA = d_srcA(icode, dreg->getrA());
+   srcB = d_srcB(icode, dreg->getrB());
+   uint64_t cnd = e_stage->getCnd();
+   calculateControlSignals(ereg->geticode()->getOutput(),ereg->getdstM()->getOutput(), getsrcA(), getsrcB(), cnd);
+
+
+   uint64_t valA = d_valA(e_stage, mreg, wreg, srcA, m_stage, valP, icode);
+   uint64_t valB = d_valB(e_stage, mreg, wreg, srcB, m_stage);
    setEInput(ereg, stat, icode, ifun, valC, valA, valB, dstE, dstM, srcA, srcB);
    return false;
-	//copy and change from FetchStage.h
-	//might need D.h
 }
 
 /* doClockHigh
@@ -64,19 +66,31 @@ bool DecodeStage::doClockLow(PipeReg ** pregs, Stage ** stages)
 void DecodeStage::doClockHigh(PipeReg ** pregs)
 {
    E * ereg = (E *) pregs[EREG];
-
-   ereg->getstat()->normal();
-   ereg->geticode()->normal();
-   ereg->getifun()->normal();
-   ereg->getvalC()->normal();
-   ereg->getvalA()->normal();
-   ereg->getvalB()->normal();
-   ereg->getdstE()->normal();
-   ereg->getdstM()->normal();
-   ereg->getsrcA()->normal();
-   ereg->getsrcB()->normal();
+   if(!E_bubble)
+   {
+      normal(ereg);
+   }
+   else
+   {
+      bubble(ereg);
+   }
 }
-
+/* doClockHigh
+ * applies the appropriate control signal to the D
+ * and E register intances
+ *
+ * @param: ereg
+ * @param: stat
+ * @param: icode
+ * @param: ifun
+ * @param: valC
+ * @param: valA
+ * @param: valB
+ * @param: dstE
+ * @param: dstM
+ * @param: srcA
+ * @param: srcB
+ */
 void DecodeStage::setEInput(E * ereg, uint64_t stat, uint64_t icode,
                            uint64_t ifun, uint64_t valC, uint64_t valA,
                            uint64_t valB, uint64_t dstE, uint64_t dstM,
@@ -94,6 +108,12 @@ void DecodeStage::setEInput(E * ereg, uint64_t stat, uint64_t icode,
    ereg->getsrcB()->setInput(srcB);
 }
 
+
+/* d_srcA
+ * 
+ * @param: d_icode
+ * @param: rA
+ */
 uint64_t DecodeStage::d_srcA(uint64_t d_icode, PipeRegField * rA)
 {
    if(d_icode == IRRMOVQ || d_icode == IRMMOVQ || d_icode == IOPQ || d_icode == IPUSHQ)
@@ -109,6 +129,11 @@ uint64_t DecodeStage::d_srcA(uint64_t d_icode, PipeRegField * rA)
    
 }
 
+/* d_srcB
+ * 
+ * @param: d_icode
+ * @param: rB
+ */
 uint64_t DecodeStage::d_srcB(uint64_t d_icode, PipeRegField * rB)
 {
    if(d_icode == IRMMOVQ || d_icode == IOPQ || d_icode == IMRMOVQ)
@@ -123,6 +148,12 @@ uint64_t DecodeStage::d_srcB(uint64_t d_icode, PipeRegField * rB)
 
 }
 
+/* d_icode
+ * 
+ * @param: d_icode
+ * @param: rB
+ */
+
 uint64_t DecodeStage::d_dstE(uint64_t d_icode, PipeRegField * rB)
 {
    if(d_icode == IRRMOVQ || d_icode == IOPQ || d_icode == IIRMOVQ)
@@ -135,9 +166,14 @@ uint64_t DecodeStage::d_dstE(uint64_t d_icode, PipeRegField * rB)
    }
    
     return RNONE;
-   
 }
 
+
+/* d_dstM
+ * 
+ * @param: d_icode
+ * @param: rA
+ */
 uint64_t DecodeStage::d_dstM(uint64_t d_icode, PipeRegField * rA)
 {
    if(d_icode == IMRMOVQ || d_icode == IPOPQ)
@@ -148,7 +184,16 @@ uint64_t DecodeStage::d_dstM(uint64_t d_icode, PipeRegField * rA)
   
 }
 
-uint64_t DecodeStage::d_valA(ExecuteStage *e_stage, M * m_reg, W *w_reg, uint64_t d_srcA, MemoryStage *m_stage)
+/* d_valA
+ * Decodes the ValA
+ * @param: e_stage
+ * @param: m_reg
+ * @param: w_reg
+ * @param: m_stage
+ * @param: valP
+ * @param: icode
+ */
+uint64_t DecodeStage::d_valA(ExecuteStage *e_stage, M * m_reg, W *w_reg, uint64_t d_srcA, MemoryStage *m_stage, uint64_t valP, uint64_t icode)
 {
 
    uint64_t e_dstE = e_stage->get_dstE();
@@ -158,7 +203,10 @@ uint64_t DecodeStage::d_valA(ExecuteStage *e_stage, M * m_reg, W *w_reg, uint64_
    uint64_t M_dstM = m_reg->getdstM()->getOutput();
    uint64_t W_dstM = w_reg->getdstM()->getOutput();
    bool flag = false;
-
+   if(icode == ICALL || icode == IJXX)
+   {
+      return valP;
+   }
    if(d_srcA == RNONE)
    {
         return 0; 
@@ -194,6 +242,15 @@ uint64_t DecodeStage::d_valA(ExecuteStage *e_stage, M * m_reg, W *w_reg, uint64_
    return reg->readRegister(d_srcA,flag);
 
 }
+
+/* d_valB
+ * Decodes the ValB
+ * @param: e_stage
+ * @param: m_reg
+ * @param: w_reg
+ * @param: m_stage
+ * @param: d_srcB
+ */
 
 uint64_t DecodeStage::d_valB(ExecuteStage *e_stage, M * m_reg, W *w_reg, uint64_t d_srcB, MemoryStage *m_stage)
 {
@@ -239,6 +296,76 @@ uint64_t DecodeStage::d_valB(ExecuteStage *e_stage, M * m_reg, W *w_reg, uint64_
 
    RegisterFile * reg = RegisterFile::getInstance();
    return reg->readRegister(d_srcB,flag);
+}
 
+/*
+*Fowards srcA
+*/
+uint64_t DecodeStage::getsrcA()
+{
+   return srcA;
+}
 
+/*
+*Fowards srcB
+*/
+uint64_t DecodeStage::getsrcB()
+{
+   return srcB;
+}
+
+ /*
+ * calculateControlSignals
+ * 
+ * 
+ * @param: eicode  
+ * @param: dicode    
+ * @param: micode
+ * @param: e_dstm
+ * @param: srcB
+ * @param: e_Cnd
+ */
+void DecodeStage::calculateControlSignals(uint64_t eicode, uint64_t E_dstM,uint64_t srcA, uint64_t srcB, uint64_t e_Cnd)
+{
+   E_bubble = (eicode == IJXX && !e_Cnd) || ((eicode == IMRMOVQ || eicode == IPOPQ) && (E_dstM == srcA || E_dstM == srcB));
+}
+
+/* 
+ * Spit from doClockHigh
+ * Normal
+ *
+ * @param: ereg
+ */
+void DecodeStage::normal(E * ereg)
+{
+      ereg->getstat()->normal();
+      ereg->geticode()->normal();
+      ereg->getifun()->normal();
+      ereg->getvalC()->normal();
+      ereg->getvalA()->normal();
+      ereg->getvalB()->normal();
+      ereg->getdstE()->normal();
+      ereg->getdstM()->normal();
+      ereg->getsrcA()->normal();
+      ereg->getsrcB()->normal();
+}
+
+/* 
+ * Spit from doClockHigh
+ * Bubble
+ *
+ * @param: ereg
+ */
+void DecodeStage::bubble(E * ereg)
+{
+      ereg->getstat()->bubble(SAOK);
+      ereg->geticode()->bubble(INOP);
+      ereg->getifun()->bubble();
+      ereg->getvalC()->bubble();
+      ereg->getvalA()->bubble();
+      ereg->getvalB()->bubble();
+      ereg->getdstE()->bubble(RNONE);
+      ereg->getdstM()->bubble(RNONE);
+      ereg->getsrcA()->bubble(RNONE);
+      ereg->getsrcB()->bubble(RNONE);
 }

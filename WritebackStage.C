@@ -1,8 +1,8 @@
 #include <string>
 #include <cstdint>
+#include "PipeReg.h"
 #include "RegisterFile.h"
 #include "PipeRegField.h"
-#include "PipeReg.h"
 #include "F.h"
 #include "D.h"
 #include "M.h"
@@ -26,11 +26,13 @@
 bool WritebackStage::doClockLow(PipeReg ** pregs, Stage ** stages)
 {
 	W * wreg = (W *) pregs[WREG];
-	uint64_t icode = wreg->geticode()->getOutput();
-	if (icode == IHALT)
+	//uint64_t icode = wreg->geticode()->getOutput();
+	//RegisterFile * reg = RegisterFile::getInstance();
+	if (wreg->getstat()->getOutput() != SAOK)
 	{
 		return true;
 	}
+
 	return false;
 }
 
@@ -45,4 +47,7 @@ void WritebackStage::doClockHigh(PipeReg ** pregs)
 	W * wreg = (W *) pregs[WREG];
 	bool error = false;
 	RegisterFile::getInstance()->writeRegister(wreg->getvalE()->getOutput(), wreg->getdstE()->getOutput(), error);
+	RegisterFile::getInstance()->writeRegister(wreg->getvalM()->getOutput(), wreg->getdstM()->getOutput(), error);
+
 }
+

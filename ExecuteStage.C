@@ -12,6 +12,7 @@
 #include "Tools.h"
 #include "Instructions.h"
 #include "ExecuteStage.h"
+#include "MemoryStage.h"
 #include "Status.h"
 #include "ConditionCodes.h"
 #include "Debug.h"
@@ -29,31 +30,31 @@
 
 bool ExecuteStage::doClockLow(PipeReg ** pregs, Stage ** stages)
 {
-	//repeat from decode, E.h
 	E * ereg = (E *) pregs[EREG];
 	M * mreg = (M *) pregs[MREG];
+	W * wreg = (W *) pregs[WREG];
+	MemoryStage * m_stage = (MemoryStage*)stages[MSTAGE];
 
 	uint64_t stat = ereg->getstat()->getOutput();
 	uint64_t icode = ereg->geticode()->getOutput();
-	uint64_t Cnd = 0;
 	uint64_t valA = ereg->getvalA()->getOutput();
-	dstE = ereg->getdstE()->getOutput();
 	uint64_t dstM = ereg->getdstM()->getOutput();
-
-	//get values
 	uint64_t valC = ereg->getvalC()->getOutput();
 	uint64_t ifun = ereg->getifun()->getOutput();
 	uint64_t valB = ereg->getvalB()->getOutput();
+	dstE = ereg->getdstE()->getOutput();
 
 	uint64_t alua = aluA(icode, valA, valC);
 	uint64_t alub = aluB(icode, valB);
 	uint64_t e_alufun = alufun(icode, ifun);
 
 	//bool set for ALU execution
-	bool bo = set_cc(icode);
+	bool bo = set_cc(icode, m_stage->get_stat(), wreg->getstat()->getOutput());
 	valE = ALU(e_alufun,alua, alub, bo);
 	Cnd = condtionalLogic(ifun, icode);
 	dstE = e_dstE(icode, dstE, Cnd);
+	
+	M_bubble = calculateControlSignals(m_stage->get_stat(), wreg->getstat()->getOutput());
 
 	setMInput(mreg, stat, icode, Cnd, valE, valA, dstE, dstM);
 	return false;
@@ -67,15 +68,15 @@ bool ExecuteStage::doClockLow(PipeReg ** pregs, Stage ** stages)
  */
 void ExecuteStage::doClockHigh(PipeReg ** pregs)
 {
-   M * mreg = (M *) pregs[MREG];
-   mreg->getstat()->normal();
-   mreg->geticode()->normal();
-   mreg->getCnd()->normal();
-   mreg->getvalE()->normal();
-   mreg->getvalA()->normal();
-   mreg->getdstE()->normal();
-   mreg->getdstM()->normal();
-
+	M * mreg = (M *) pregs[MREG];
+	if(M_bubble)
+	{
+		bubble(mreg);
+	}
+	else
+	{
+		normal(mreg);
+	}
 
 }
 
@@ -125,7 +126,11 @@ uint64_t ExecuteStage::aluA(uint64_t e_icode, uint64_t e_valA, uint64_t e_valC)
 
 	}
 }
-
+/*gets the value from the ALU
+ *
+ *@param e_icode
+ *@param e_valB
+ */
 uint64_t ExecuteStage::aluB(uint64_t e_icode, uint64_t e_valB)
 {
 	switch(e_icode)
@@ -149,6 +154,11 @@ uint64_t ExecuteStage::aluB(uint64_t e_icode, uint64_t e_valB)
 	}
 }
 
+/*
+ *alufun
+ *@param e_icode
+ *@param ifun
+ */
 uint64_t ExecuteStage::alufun(uint64_t e_icode,uint64_t e_ifun)
 {
 	switch(e_icode)
@@ -159,14 +169,28 @@ uint64_t ExecuteStage::alufun(uint64_t e_icode,uint64_t e_ifun)
 		default:
 			return ADDQ;
 			break;
-	}
+	} 
 }
 
-bool ExecuteStage::set_cc(uint64_t e_icode)
+/*
+ *set_cc
+ * sets the cond codes
+ *@param e_icode
+ *@param mstat
+ *@param wstat
+ */
+bool ExecuteStage::set_cc(uint64_t e_icode, uint64_t mstat, uint64_t wstat)
 {
-	return(e_icode == IOPQ);
+	return ((e_icode == IOPQ) && (mstat != SADR && mstat != SINS && mstat != SHLT)  && (wstat != SADR && wstat != SINS && wstat != SHLT));
 }
 
+/*
+ *e_dstE
+ * 
+ *@param e_icode
+ *@param e_dstE
+ *@param e_cnd
+ */
 uint64_t ExecuteStage::e_dstE(uint64_t e_icode, uint64_t e_dstE, uint64_t e_cnd)
 {
 	if(e_icode == IRRMOVQ && !e_cnd)
@@ -177,18 +201,26 @@ uint64_t ExecuteStage::e_dstE(uint64_t e_icode, uint64_t e_dstE, uint64_t e_cnd)
 	return e_dstE;
 }
 
-
+/*
+*Fowards dstE
+*/
 uint64_t ExecuteStage::get_dstE()
 {
 	return dstE;
 }
-
+/*
+*Fowards srcA
+*/
 uint64_t ExecuteStage::get_valE()
 {
 	return valE;
 }
 
-
+/*
+*condtionalLogic
+*@param ifun
+*@param icode
+*/
 uint64_t ExecuteStage::condtionalLogic(uint64_t ifun, uint64_t icode)
 {
 	ConditionCodes * codes = ConditionCodes::getInstance();
@@ -230,6 +262,14 @@ uint64_t ExecuteStage::condtionalLogic(uint64_t ifun, uint64_t icode)
 
 }
 
+/*
+*ALU
+* ALU does the math man
+*@param ifun
+*@param aluA
+*@param aluB
+*@param condtionscheck
+*/
 uint64_t ExecuteStage::ALU(uint64_t alufun, uint64_t aluA, uint64_t aluB, bool condtionscheck)
 {
 	uint64_t answer = 0;
@@ -264,3 +304,60 @@ uint64_t ExecuteStage::ALU(uint64_t alufun, uint64_t aluA, uint64_t aluB, bool c
 
 	return answer;
 }
+
+
+/*
+*calculateControlSignals
+* 
+*@param mstat
+*@param wstat
+*/
+bool ExecuteStage::calculateControlSignals(uint64_t mstat,uint64_t wstat)
+{
+	return ((mstat == SADR || mstat == SINS || mstat == SHLT) || (wstat == SADR || wstat == SINS || wstat == SHLT));
+}
+
+/*
+*
+* Fowards Cnd
+*
+*/
+uint64_t ExecuteStage::getCnd()
+{
+	return Cnd;
+}
+/* 
+ * Spit from doClockHigh
+ * Bubble
+ *
+ * @param: mreg
+ */
+void ExecuteStage::bubble(M * mreg)
+{
+		mreg->getstat()->bubble(SAOK);
+		mreg->geticode()->bubble(INOP);
+		mreg->getCnd()->bubble();
+		mreg->getvalE()->bubble();
+		mreg->getvalA()->bubble();
+		mreg->getdstE()->bubble(RNONE);
+		mreg->getdstM()->bubble(RNONE);
+}
+
+/* 
+ * Spit from doClockHigh
+ * Normal
+ *
+ * @param: ereg
+ */
+void ExecuteStage::normal(M * mreg)
+{
+		mreg->getstat()->normal();
+   		mreg->geticode()->normal();
+   		mreg->getCnd()->normal();
+   		mreg->getvalE()->normal();
+  		mreg->getvalA()->normal();
+   		mreg->getdstE()->normal();
+   		mreg->getdstM()->normal();
+}
+
+

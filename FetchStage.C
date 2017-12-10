@@ -5,15 +5,19 @@
 #include "PipeReg.h"
 #include "F.h"
 #include "D.h"
+#include "E.h"
 #include "M.h"
 #include "W.h"
 #include "Stage.h"
 #include "FetchStage.h"
+#include "MemoryStage.h"
+#include "ExecuteStage.h"
 #include "Status.h"
 #include "Debug.h"
 #include "Memory.h"
 #include "Tools.h"
 #include "Instructions.h"
+#include "DecodeStage.h"
 
 
 /*
@@ -29,28 +33,33 @@ bool FetchStage::doClockLow(PipeReg ** pregs, Stage ** stages)
 {
    F * freg = (F *) pregs[FREG];
    D * dreg = (D *) pregs[DREG];
-   uint64_t icode = 0, ifun = 0, valC = 0, valP = 0;
-   uint64_t rA = RNONE, rB = RNONE, stat = SAOK;
+   E * ereg = (E *) pregs[EREG];
+   M * mreg = (M *) pregs[MREG];
+   DecodeStage * d_stage = (DecodeStage*)stages[DSTAGE];
+   ExecuteStage * e_stage = (ExecuteStage*)stages[ESTAGE];
+   uint64_t  valC = 0, valP = 0;
+   uint64_t rA = RNONE, rB = RNONE;
    bool err = false; 
-   //code missing here to select the value of the PC
-   //and fetch the instruction from memory
-   //Fetching the instruction will allow the icode, ifun,
-   //rA, rB, and valC to be set.
-   //The lab assignment describes what methods need to be
-   //written.
+
    int32_t f_pc = selectPC(pregs);
 
-   //set icode/ifun
-   icode = Memory::getInstance()->getByte(f_pc, err);
-   ifun = Tools::getBits(icode, 0, 3);
+   uint64_t icode = Memory::getInstance()->getByte(f_pc, err);
+   uint64_t ifun = Tools::getBits(icode, 0, 3);
    icode = Tools::getBits(icode, 4, 7);
+  
+	uint64_t stat = f_stat(icode,err);
 
+	if(err)
+   {
+		icode = INOP;
+		ifun = FNONE;
+	}
 
    bool needreg = needRegIds(icode);
    bool needval = needValC(icode);
-   uint8_t gByte = Memory::getInstance()->getByte(f_pc + 1, err);
    if(needreg)
    {
+      uint8_t gByte = Memory::getInstance()->getByte(f_pc + 1, err);
       getRegIds(gByte, &rA, &rB);
    }
    if(needval)
@@ -62,10 +71,11 @@ bool FetchStage::doClockLow(PipeReg ** pregs, Stage ** stages)
 
    freg->getpredPC()->setInput(predictionPC);
 
+   uint64_t dsrcA = d_stage->getsrcA();
+   uint64_t dsrcB = d_stage->getsrcB();
+   uint64_t cnd = e_stage->getCnd();
+   calculateControlSignals(ereg->geticode()->getOutput(), dreg->geticode()->getOutput(), mreg->geticode()->getOutput(), ereg->getdstM()->getOutput(), dsrcA, dsrcB, cnd);
 
-   //The value passed to setInput below will need to be changed
-
-   //provide the input values for the D register
    setDInput(dreg, stat, icode, ifun, rA, rB, valC, valP);
    return false; 
 }
@@ -81,15 +91,30 @@ void FetchStage::doClockHigh(PipeReg ** pregs)
    F * freg = (F *) pregs[FREG];
    D * dreg = (D *) pregs[DREG];
 
-   freg->getpredPC()->normal();
-   
-   dreg->getstat()->normal();
-   dreg->geticode()->normal();
-   dreg->getifun()->normal();
-   dreg->getrA()->normal();
-   dreg->getrB()->normal();
-   dreg->getvalC()->normal();
-   dreg->getvalP()->normal();
+   if (!F_stall)
+   {
+   		freg->getpredPC()->normal();
+   }
+   if (D_bubble)
+   {
+   		dreg->getstat()->bubble(SAOK);
+   		dreg->geticode()->bubble(INOP);
+   		dreg->getifun()->bubble();
+   		dreg->getrA()->bubble(RNONE);
+   		dreg->getrB()->bubble(RNONE);
+   		dreg->getvalC()->bubble();
+   		dreg->getvalP()->bubble();
+   }
+   else if (!D_stall)
+   {
+   		dreg->getstat()->normal();
+   		dreg->geticode()->normal();
+   		dreg->getifun()->normal();
+   		dreg->getrA()->normal();
+   		dreg->getrB()->normal();
+   		dreg->getvalC()->normal();
+   		dreg->getvalP()->normal();
+	}
 }
 
 /* setDInput
@@ -117,7 +142,15 @@ void FetchStage::setDInput(D * dreg, uint64_t stat, uint64_t icode,
    dreg->getvalC()->setInput(valC);
    dreg->getvalP()->setInput(valP);
 }
-
+/*
+ * selectPC:
+ * seects the vaue of the next pc 
+ * .
+ *
+ * @param: pregs - array of the pipeline register sets (F, D, E, M, W instances)
+ * 
+ *         
+ */
 uint64_t FetchStage::selectPC(PipeReg ** pregs)
 {
    F * freg = (F *) pregs[FREG];
@@ -138,6 +171,15 @@ uint64_t FetchStage::selectPC(PipeReg ** pregs)
    }
 }
 
+/*
+ * needRegIds
+ * Determines if the instruction uses a register or not
+ * .
+ *
+ * @param: f_icode the icdoe in the instrution
+ * 
+ *         
+ */
 bool FetchStage::needRegIds(uint64_t f_icode)
 {
    if(f_icode == IRRMOVQ || f_icode == IOPQ
@@ -149,6 +191,17 @@ bool FetchStage::needRegIds(uint64_t f_icode)
    return false;
 }
 
+
+/*
+ * needValC
+ * Determines if the instruction has a desnt(vaCl)
+ * .
+ *
+ * @param: f_icode the icdoe in the instrution
+ * 
+ *         
+ */
+
 bool FetchStage::needValC(uint64_t f_icode)
 {
    if(f_icode == IIRMOVQ || f_icode == IRMMOVQ
@@ -159,7 +212,17 @@ bool FetchStage::needValC(uint64_t f_icode)
    }
    return false;
 }
-     
+
+/*
+ * predictPC
+ * Determines if the instrution is a jump or not
+ * aways take the jump and fix it later
+ *
+ * @param: f_icode the icdoe in the instrution
+ * @param: f_valC the desntion or m
+ * @param: f_valP the next address 
+ *         
+ */
 uint64_t FetchStage::predictPC(uint64_t f_icode, uint64_t f_valC, uint64_t f_valP)
 {
    if (f_icode == IJXX || f_icode == ICALL)       
@@ -170,20 +233,50 @@ uint64_t FetchStage::predictPC(uint64_t f_icode, uint64_t f_valC, uint64_t f_val
    {
       return f_valP;
    }
-
 }
+
+/*
+ * PCincrement
+ * increments the PC
+ * 
+ *
+ * @param: pc the current pc
+ * @param: reg 
+ * @param: f_valC the denst 
+ *         
+ */
 
 uint64_t FetchStage::PCincrement(uint64_t pc, bool reg, bool fvalC)
 {
    return pc + 1 + reg + (8 * fvalC);
 }
 
+/*
+ * getRegIds
+ * gets the reg ID
+ * 
+ *
+ * @param: rbyte register byte
+ * @param: rA
+ * @param: rB 
+ *         
+ */
 void FetchStage::getRegIds(uint64_t rbyte, uint64_t *rA, uint64_t *rB)
 {
    *rA = Tools::getBits(rbyte, 4, 7);
    *rB = Tools::getBits(rbyte, 0, 3);
 }
 
+/*
+ * buildValc
+ * buids the ValC
+ * 
+ *
+ * @param: f_pc fetch stage PC
+ * @param: regId
+ * 
+ *         
+ */
 uint64_t FetchStage::buildValC(uint64_t f_pc, bool regId)
 {
    Memory * memory = Memory::getInstance();
@@ -206,6 +299,109 @@ uint64_t FetchStage::buildValC(uint64_t f_pc, bool regId)
    }
    return Tools::buildLong(c);
 }
+/*
+ * buildValc
+ * buids the ValC
+ * @param: f_icode the icode fetched in the fetch stage        
+ */
+bool FetchStage::instr_valid(uint64_t f_icode)
+{
+   if(f_icode == INOP || f_icode == IHALT || f_icode == IIRMOVQ || f_icode == IRMMOVQ
+      || f_icode == IRRMOVQ || f_icode == IMRMOVQ || f_icode == IOPQ || f_icode == IJXX
+      || f_icode == ICALL || f_icode == IRET || f_icode == IPUSHQ || f_icode ==IPOPQ)
+   {
+      return true;
+   }
+   return false;
+}
+ /*
+ * buildValc
+ * buids the ValC
+ * @param: f_icode the icode fetched in the fetch stage   
+ * @param mem_error if there is a error or not     
+ */
 
+uint64_t FetchStage::f_stat(uint64_t f_icode,bool mem_error)
+{
+   //I tired making this a swtch but some test failed ifk why - Francis  11/25/2017
+   if(mem_error)
+   {
+      return SADR;
+   }
+   else if(!instr_valid(f_icode))
+   {
+      return SINS;
+   }
+   else if(f_icode == IHALT)
+   {
+      return SHLT;
+   }
+   else
+   {
+      return SAOK;
+   }
+}
+ /*
+ * fstall
+ * stals the fetch stage
+ * buids 
+ * @param: eicode  
+ * @param: dicode    
+ * @param: micode
+ * @param: e_dstm
+ * @param: srcA
+ * @param: srcB
+ */
 
+bool FetchStage::fstall(uint64_t eicode, uint64_t dicode, uint64_t micode, uint64_t E_dstM, uint64_t srcA, uint64_t srcB)
+{
+   return ((eicode == IMRMOVQ || eicode == IPOPQ) && (E_dstM == srcA || E_dstM == srcB)) || (IRET == eicode || IRET == dicode || IRET == micode);
+}
+ /*
+ * dstall
+ * stals the decodestage
+ * 
+ * @param: eicode  
+ * @param: dicode    
+ * @param: micode
+ * @param: e_dstm
+ * @param: srcA
+ * @param: srcB
+ */
+bool FetchStage::dstall(uint64_t eicode, uint64_t E_dstM, uint64_t srcA, uint64_t srcB)
+{
+   return (eicode == IMRMOVQ || eicode == IPOPQ) && (E_dstM == srcA || E_dstM == srcB);
+}
+ /*
+ * calculateControlSignals
+ * 
+ * 
+ * @param: eicode  
+ * @param: dicode    
+ * @param: micode
+ * @param: e_dstm
+ * @param: srcB
+ * @param: e_Cnd
+ */
+void FetchStage::calculateControlSignals(uint64_t eicode, uint64_t dicode, uint64_t micode, uint64_t E_dstM, uint64_t srcA, uint64_t srcB, uint64_t e_Cnd)
+{
+	F_stall = fstall(eicode, dicode, micode, E_dstM, srcA, srcB);
+	D_stall = dstall(eicode,E_dstM, srcA, srcB);
+	D_bubble = dbubble(eicode, dicode, micode, e_Cnd, srcA, srcB, E_dstM);
+}
 
+ /*
+ * dbubbe
+ * 
+ * 
+ * @param: eicode  
+ * @param: dicode    
+ * @param: micode
+ * @param: e_dstm
+ * @param: srcB
+ * @param: E_dstM
+ */
+bool FetchStage::dbubble(uint64_t E_icode, uint64_t dicode, uint64_t micode, uint64_t e_Cnd, uint64_t srcA, uint64_t srcB, uint64_t E_dstM)
+{
+	return (E_icode == IJXX && !e_Cnd) || (!((E_icode == IMRMOVQ || E_icode == IPOPQ) && (E_dstM == srcA || E_dstM == srcB)) && (IRET == E_icode || IRET == dicode || IRET == micode));
+}

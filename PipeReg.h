@@ -23,3 +23,5 @@ class PipeReg
       void dumpField(std::string label, int width, uint64_t value, bool nl);
 };
 
+
+

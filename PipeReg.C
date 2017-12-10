@@ -18,3 +18,4 @@ void PipeReg::dumpField(std::string fieldname, int width, uint64_t fieldvalue, b
    std::cout << fieldname << std::hex << std::setw(width) << std::setfill('0') << fieldvalue;
    if (newline) std::cout << std::endl;
 }   
+
