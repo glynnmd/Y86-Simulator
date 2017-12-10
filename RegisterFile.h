@@ -17,16 +17,16 @@
 #define R14 0xe
 #define RNONE 0xf
 
-class RegisterFile 
+class RegisterFile
 {
    private:
       static RegisterFile * regInstance;
       RegisterFile();
       uint64_t reg[REGSIZE];
    public:
-      static RegisterFile * getInstance();      
+      static RegisterFile * getInstance();
       uint64_t readRegister(int32_t regNumber, bool & error);
-      void writeRegister(uint64_t value, int32_t regNumber, 
+      void writeRegister(uint64_t value, int32_t regNumber,
                         bool & error);
       void dump();
-}; 
+};
